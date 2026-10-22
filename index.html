@@ -3535,7 +3535,7 @@ select:focus-visible,
   var Util = YuC.Util;
   var state = YuC.Store.load();
   var viewState = {
-    view: state.story.startedAt ? "chat" : "setup",
+    view: (state.story.startedAt || state.messages.length) ? "chat" : "setup",
     apiKey: YuC.Store.readApiKey(state.api.rememberKey),
     busy: false,
     parsing: false,
@@ -3734,7 +3734,7 @@ select:focus-visible,
   function applyRestoredState(restored) {
     state = YuC.State.sanitize(restored);
     YuC.App.state = state;
-    viewState.view = state.story.startedAt ? "chat" : "setup";
+    viewState.view = (state.story.startedAt || state.messages.length) ? "chat" : "setup";
     viewState.memoryStatus = "";
     viewState.parseMessage = "";
     viewState.parseError = "";
@@ -3753,7 +3753,7 @@ select:focus-visible,
       backupNow("导入前");
       applyRestoredState(restored);
       backupNow("导入备份");
-      YuC.UI.toast("备份已导入");
+      YuC.UI.toast("备份已导入：" + state.messages.length + " 条消息、" + state.cast.length + " 名人物");
     } catch (error) {
       YuC.UI.setSettingsStatus(error.message || String(error), true);
     }
