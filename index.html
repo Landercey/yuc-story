@@ -699,6 +699,15 @@ select:focus-visible,
   gap: 2px;
 }
 
+.undo-button {
+  width: auto;
+  min-width: 48px;
+  padding: 0 8px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .memory-button {
   display: flex;
   align-items: center;
@@ -778,9 +787,35 @@ select:focus-visible,
   animation: message-in .2s ease both;
 }
 
+.message.assistant {
+  display: block;
+  width: 100%;
+  max-width: 94%;
+}
+
 .message.user {
   flex-direction: row-reverse;
   margin-left: auto;
+}
+
+.message-segments {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  width: 100%;
+}
+
+.speaker-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+}
+
+.speaker-row .message-content-wrap {
+  flex: 0 1 auto;
+  max-width: 86%;
+  min-width: 0;
 }
 
 .message-avatar {
@@ -1035,6 +1070,35 @@ select:focus-visible,
   background: rgba(244, 239, 230, .5);
 }
 
+.api-profile-panel {
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(244, 239, 230, .42);
+}
+
+.api-profile-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.api-profile-row select {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper-raised);
+}
+
+.api-profile-row .quiet-button {
+  padding: 0 11px;
+  white-space: nowrap;
+}
+
 .backup-heading {
   display: flex;
   align-items: baseline;
@@ -1065,6 +1129,21 @@ select:focus-visible,
   min-width: 0;
   padding: 0 8px;
   font-size: 12px;
+}
+
+.auto-file-backup {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.auto-file-backup strong {
+  font-family: var(--serif);
+  font-size: 14px;
+}
+
+.auto-file-backup .backup-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .check-row {
@@ -1363,6 +1442,14 @@ select:focus-visible,
     grid-template-columns: 1fr;
   }
 
+  .api-profile-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .api-profile-row select {
+    grid-column: 1 / -1;
+  }
+
   .composer {
     padding-right: 8px;
     padding-left: 8px;
@@ -1547,7 +1634,7 @@ select:focus-visible,
           </button>
         </div>
         <div class="chat-tools">
-          <button class="icon-button" id="undoButton" type="button" aria-label="撤销最后一条消息" title="撤销最后一条消息">↶</button>
+          <button class="icon-button undo-button" id="undoButton" type="button" aria-label="撤销最后一步" title="撤销最后一步">撤销</button>
           <button class="icon-button" id="openCastButton" type="button" aria-label="查看人物" title="查看人物">人</button>
           <button class="icon-button" id="openChatStoriesButton" type="button" aria-label="切换故事" title="切换故事">册</button>
         </div>
@@ -1581,6 +1668,20 @@ select:focus-visible,
         <button class="icon-button" value="cancel" type="submit" aria-label="关闭">×</button>
       </header>
       <div class="modal-body">
+        <section class="api-profile-panel">
+          <div class="backup-heading">
+            <h3>已保存的接口配置</h3>
+            <span>可随时切换模型和接口</span>
+          </div>
+          <div class="api-profile-row">
+            <select id="apiProfileSelect">
+              <option value="">当前自定义配置</option>
+            </select>
+            <button class="quiet-button" id="saveApiProfileButton" type="button">存为新配置</button>
+            <button class="quiet-button" id="deleteApiProfileButton" type="button">删除</button>
+          </div>
+          <p class="fine-print">配置包含接口地址、模型、温度和长度；Key 单独保存在本机，不写入备份文件。</p>
+        </section>
         <label class="field">
           <span>连接方式</span>
           <select id="connectionModeInput">
@@ -1639,6 +1740,16 @@ select:focus-visible,
             <button class="quiet-button" id="exportPortableButton" type="button">导出完整 HTML</button>
             <button class="quiet-button" id="importBackupButton" type="button">导入备份</button>
             <button class="quiet-button" id="restoreBackupButton" type="button">恢复最近快照</button>
+          </div>
+          <div class="auto-file-backup">
+            <div>
+              <strong>自动写入手机文件</strong>
+              <p class="fine-print" id="autoBackupStatus">Android Chrome 支持；iPhone 需手动导出。</p>
+            </div>
+            <div class="backup-actions">
+              <button class="quiet-button" id="selectAutoBackupButton" type="button">选择备份文件</button>
+              <button class="quiet-button" id="clearAutoBackupButton" type="button">关闭自动备份</button>
+            </div>
           </div>
           <input id="importBackupInput" type="file" accept=".json,.html,application/json,text/html" hidden>
         </section>
@@ -1745,6 +1856,10 @@ select:focus-visible,
           <h3>未完成线索</h3>
           <p id="memoryThreadsText">—</p>
         </section>
+        <div class="modal-actions">
+          <button class="accent-button" id="summarizeNowButton" type="button">立即整理记忆</button>
+        </div>
+        <p class="modal-status" id="memoryActionStatus" aria-live="polite"></p>
       </div>
     </div>
   </dialog>
@@ -1916,7 +2031,8 @@ select:focus-visible,
         model: "deepseek-chat",
         temperature: 1,
         replyLength: "short",
-        rememberKey: false
+        rememberKey: false,
+        profileId: ""
       },
       messages: [],
       memory: {
@@ -1929,6 +2045,7 @@ select:focus-visible,
         lastSummarizedMessageCount: 0,
         lastError: ""
       },
+      checkpointSchema: 2,
       checkpoints: [],
       style: YuC.Styles ? YuC.Styles.defaultStyle() : undefined
     };
@@ -1939,7 +2056,8 @@ select:focus-visible,
     return {
       version: 2,
       activeStoryId: story.id,
-      stories: [story]
+      stories: [story],
+      profiles: []
     };
   }
 
@@ -2006,6 +2124,7 @@ select:focus-visible,
       ? api.replyLength
       : "short";
     base.api.rememberKey = !!api.rememberKey;
+    base.api.profileId = clampText(api.profileId, 80);
 
     base.cast = Array.isArray(source.cast)
       ? source.cast.map(sanitizeCastItem).filter(Boolean).slice(0, 50)
@@ -2023,11 +2142,17 @@ select:focus-visible,
     base.memory.lastSummarizedMessageCount = Math.max(0, Number(memory.lastSummarizedMessageCount) || 0);
     base.memory.lastError = clampText(memory.lastError, 1000);
 
+    var checkpointSchema = Number(source.checkpointSchema) || 0;
     base.checkpoints = Array.isArray(source.checkpoints)
       ? source.checkpoints.filter(function (checkpoint) {
           return checkpoint && typeof checkpoint === "object";
-        }).slice(-MAX_CHECKPOINTS)
+        }).slice(-MAX_CHECKPOINTS).map(function (checkpoint) {
+          var copy = clone(checkpoint);
+          if (checkpointSchema < 2) delete copy.messages;
+          return copy;
+        })
       : [];
+    base.checkpointSchema = 2;
     base.style = YuC.Styles ? YuC.Styles.sanitizeStyle(source.style) : source.style;
     return base;
   }
@@ -2052,7 +2177,16 @@ select:focus-visible,
     if (!stories.some(function (story) { return story.id === activeStoryId; })) {
       activeStoryId = stories[0].id;
     }
-    return { version: 2, activeStoryId: activeStoryId, stories: stories };
+    var profiles = Array.isArray(source.profiles) ? source.profiles.map(function (profile) {
+      if (!profile || typeof profile !== "object") return null;
+      return {
+        id: clampText(profile.id, 80) || uid("profile"),
+        name: clampText(profile.name, 60) || "未命名配置",
+        api: sanitizeState({ api: profile.api, story: { background: "x" } }).api,
+        createdAt: Number(profile.createdAt) || Date.now()
+      };
+    }).filter(Boolean) : [];
+    return { version: 2, activeStoryId: activeStoryId, stories: stories, profiles: profiles };
   }
 
   function activeStory(envelope) {
@@ -2138,7 +2272,8 @@ select:focus-visible,
     saveEnvelope({
       version: 2,
       activeStoryId: state.id,
-      stories: [state]
+      stories: [state],
+      profiles: []
     });
   }
 
@@ -2196,11 +2331,10 @@ select:focus-visible,
     }
   }
 
-  function makeCheckpoint(state) {
+  function makeCheckpoint(state, options) {
     var checkpoint = {
       id: uid("checkpoint"),
       messageCount: state.messages.length,
-      messages: clone(state.messages),
       memory: clone(state.memory),
       castStates: state.cast.map(function (character) {
         return {
@@ -2210,6 +2344,7 @@ select:focus-visible,
         };
       })
     };
+    if (options && options.captureMessages) checkpoint.messages = clone(state.messages);
     state.checkpoints.push(checkpoint);
     if (state.checkpoints.length > MAX_CHECKPOINTS) {
       state.checkpoints.splice(0, state.checkpoints.length - MAX_CHECKPOINTS);
@@ -2419,6 +2554,193 @@ select:focus-visible,
   "use strict";
 
   var YuC = root.YuC = root.YuC || {};
+
+  function parse(content, cast) {
+    var source = String(content || "");
+    var byName = Object.create(null);
+    (cast || []).forEach(function (character) {
+      if (character && character.name) byName[character.name.trim().toLowerCase()] = character;
+    });
+
+    function flush(blocks, buffer) {
+      var text = buffer.length ? buffer.join("\n").trim() : "";
+      if (!text) return;
+      var last = blocks[blocks.length - 1];
+      if (last && last.narrator) last.text += (last.text ? "\n" : "") + text;
+      else blocks.push({ narrator: true, name: "旁白", avatar: "", text: text });
+    }
+
+    var blocks = [];
+    var narration = [];
+    source.split(/\r?\n/).forEach(function (line) {
+      var trimmed = line.trim();
+      if (!trimmed) {
+        if (narration.length) narration.push("");
+        return;
+      }
+      var match = trimmed.match(/^([^：:\n]{1,30})[：:]\s*([\s\S]*)$/);
+      if (!match && (match = trimmed.match(/^[\[【]([^\]】]{1,30})[\]】]\s*([\s\S]*)$/))) {
+        // Bracket labels are accepted as a model fallback.
+      }
+      if (match) {
+        var name = match[1].trim();
+        var character = byName[name.toLowerCase()];
+        if (character || name === "旁白") {
+          flush(blocks, narration);
+          narration = [];
+          if (character) {
+            blocks.push({
+              narrator: false,
+              name: character.name,
+              avatar: character.avatar || "",
+              text: match[2].trim()
+            });
+          } else {
+            blocks.push({ narrator: true, name: "旁白", avatar: "", text: match[2].trim() });
+          }
+          return;
+        }
+      }
+      narration.push(line);
+    });
+    flush(blocks, narration);
+    if (!blocks.length) blocks.push({ narrator: true, name: "旁白", avatar: "", text: source });
+    return blocks;
+  }
+
+  YuC.Speakers = { parse: parse };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var DB_NAME = "yuc_app_v1";
+  var STORE_NAME = "kv";
+  var STATE_KEY = "main";
+  var BACKUP_HANDLE_KEY = "backupFileHandle";
+  var dbPromise = null;
+  var writeChain = Promise.resolve();
+  var lastSource = "default";
+
+  function openDatabase() {
+    if (!root.indexedDB) return Promise.reject(new Error("浏览器不支持 IndexedDB"));
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(function (resolve, reject) {
+      var request = root.indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = function () {
+        var db = request.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+      };
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { reject(request.error || new Error("无法打开 IndexedDB")); };
+    });
+    return dbPromise;
+  }
+
+  function readState() {
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var transaction = db.transaction(STORE_NAME, "readonly");
+        var request = transaction.objectStore(STORE_NAME).get(STATE_KEY);
+        request.onsuccess = function () { resolve(request.result || null); };
+        request.onerror = function () { reject(request.error || new Error("读取 IndexedDB 失败")); };
+      });
+    });
+  }
+
+  function writeState(envelope) {
+    var snapshot = JSON.parse(JSON.stringify(YuC.State.sanitizeEnvelope(envelope)));
+    writeChain = writeChain.catch(function () {}).then(function () {
+      return openDatabase().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var transaction = db.transaction(STORE_NAME, "readwrite");
+          transaction.objectStore(STORE_NAME).put(snapshot, STATE_KEY);
+          transaction.oncomplete = function () { resolve(true); };
+          transaction.onerror = function () { reject(transaction.error || new Error("保存 IndexedDB 失败")); };
+          transaction.onabort = function () { reject(transaction.error || new Error("保存 IndexedDB 被中止")); };
+        });
+      });
+    }).then(function () {
+      if (root.navigator && root.navigator.storage && root.navigator.storage.persist) {
+        root.navigator.storage.persist().catch(function () {});
+      }
+      return true;
+    }).catch(function (error) {
+      YuC.Store.saveEnvelope(snapshot);
+      lastSource = "local";
+      return false;
+    });
+    return writeChain;
+  }
+
+  function readValue(key) {
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var transaction = db.transaction(STORE_NAME, "readonly");
+        var request = transaction.objectStore(STORE_NAME).get(key);
+        request.onsuccess = function () { resolve(request.result || null); };
+        request.onerror = function () { reject(request.error || new Error("读取 IndexedDB 失败")); };
+      });
+    });
+  }
+
+  function writeValue(key, value) {
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var transaction = db.transaction(STORE_NAME, "readwrite");
+        transaction.objectStore(STORE_NAME).put(value, key);
+        transaction.oncomplete = function () { resolve(true); };
+        transaction.onerror = function () { reject(transaction.error || new Error("保存 IndexedDB 失败")); };
+      });
+    });
+  }
+
+  function deleteValue(key) {
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var transaction = db.transaction(STORE_NAME, "readwrite");
+        transaction.objectStore(STORE_NAME).delete(key);
+        transaction.oncomplete = function () { resolve(true); };
+        transaction.onerror = function () { reject(transaction.error || new Error("删除 IndexedDB 数据失败")); };
+      });
+    });
+  }
+
+  async function loadEnvelope() {
+    try {
+      var saved = await readState();
+      if (saved) {
+        lastSource = "indexeddb";
+        return YuC.State.sanitizeEnvelope(saved);
+      }
+    } catch (error) {}
+
+    var fallback = YuC.Store.loadEnvelope();
+    lastSource = YuC.Store.source();
+    try {
+      await writeState(fallback);
+      if (lastSource === "local") YuC.Store.clear();
+    } catch (error) {}
+    return fallback;
+  }
+
+  YuC.IdbStore = {
+    loadEnvelope: loadEnvelope,
+    saveEnvelope: writeState,
+    loadBackupHandle: function () { return readValue(BACKUP_HANDLE_KEY); },
+    saveBackupHandle: function (handle) { return writeValue(BACKUP_HANDLE_KEY, handle); },
+    clearBackupHandle: function () { return deleteValue(BACKUP_HANDLE_KEY); },
+    source: function () { return lastSource; }
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
   var INDEX_KEY = "yuc_auto_backup_index_v1";
   var ENTRY_PREFIX = "yuc_auto_backup_v1_";
   var MAX_AUTO_BACKUPS = 5;
@@ -2465,10 +2787,20 @@ select:focus-visible,
     if (store && entry && entry.key) store.removeItem(entry.key);
   }
 
+  function compactEnvelope(value) {
+    var envelope = YuC.State.sanitizeEnvelope(value);
+    var compact = JSON.parse(JSON.stringify(envelope));
+    compact.stories.forEach(function (story) {
+      story.checkpoints = [];
+    });
+    return compact;
+  }
+
   function auto(state, reason) {
     var store = storage();
     if (!store || !state) return { created: false, skipped: true, error: "浏览器不支持本地备份" };
-    var stateText = JSON.stringify(state);
+    var compact = compactEnvelope(state);
+    var stateText = JSON.stringify(compact);
     var hash = fingerprint(stateText);
     var list = readIndex();
     if (list[0] && list[0].fingerprint === hash) {
@@ -2477,7 +2809,7 @@ select:focus-visible,
 
     var createdAt = Date.now();
     var key = ENTRY_PREFIX + createdAt;
-    var envelope = YuC.State.sanitizeEnvelope(state);
+    var envelope = compact;
     var active = YuC.State.activeStory(envelope);
     var entry = {
       key: key,
@@ -2531,6 +2863,18 @@ select:focus-visible,
     return list[0] || null;
   }
 
+  function removeOldest() {
+    var list = readIndex();
+    if (!list.length) return false;
+    removeEntry(list.pop());
+    try {
+      writeIndex(list);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   function restoreLatest() {
     var store = storage();
     var entry = latest();
@@ -2544,7 +2888,7 @@ select:focus-visible,
     return JSON.stringify({
       format: "yuc-manual-backup-v1",
       createdAt: new Date().toISOString(),
-      state: state
+      state: compactEnvelope(state)
     }, null, 2);
   }
 
@@ -2575,9 +2919,11 @@ select:focus-visible,
     MAX_AUTO_BACKUPS: MAX_AUTO_BACKUPS,
     auto: auto,
     latest: latest,
+    removeOldest: removeOldest,
     restoreLatest: restoreLatest,
     exportText: exportText,
     parseImport: parseImport,
+    compactEnvelope: compactEnvelope,
     describeLatest: describeLatest,
     list: readIndex
   };
@@ -2860,6 +3206,7 @@ select:focus-visible,
       lengthRule,
       styleRule,
       "只输出故事正文，不要标题、列表、Markdown、解释、元评论或“请继续”之类的提示。",
+      "人物对白必须单独起行，并以人物列表中的原名加中文冒号开头，例如“沈砚：你来了。”。旁白、动作、表情和环境描写不要加人物名前缀。",
       "",
       "【背景故事】",
       state.story.background,
@@ -3017,7 +3364,7 @@ select:focus-visible,
     var state = options.state;
     var key = options.key;
     var signal = options.signal;
-    if (!state || state.memory.turnsSinceSummary < SUMMARY_EVERY) {
+    if (!state || (!options.force && state.memory.turnsSinceSummary < SUMMARY_EVERY)) {
       return { skipped: true, updated: false, error: "" };
     }
     if (!key) {
@@ -3025,7 +3372,7 @@ select:focus-visible,
     }
 
     var nextCount = state.memory.summaryCount + 1;
-    var rebuild = nextCount % REBUILD_EVERY === 0;
+    var rebuild = !!options.force || nextCount % REBUILD_EVERY === 0;
     if (options.onStatus) {
       options.onStatus(rebuild ? "正在重建完整记忆…" : "正在整理剧情记忆…");
     }
@@ -3529,6 +3876,7 @@ select:focus-visible,
   var currentCastId = "";
   var editingNewCast = false;
   var currentActionMessageId = "";
+  var lastCast = [];
   var toastTimer = 0;
 
   function init(nextHandlers) {
@@ -3546,14 +3894,17 @@ select:focus-visible,
       "stopButton", "settingsDialog", "connectionModeInput", "endpointInput",
       "relayEndpointInput", "relayField", "apiKeyInput", "rememberKeyInput", "modelInput",
       "replyLengthInput", "temperaturePresetInput", "testConnectionButton",
+      "apiProfileSelect", "saveApiProfileButton", "deleteApiProfileButton",
       "saveSettingsButton", "settingsStatus", "backupStatus", "exportBackupButton", "exportPortableButton",
-      "importBackupButton", "restoreBackupButton", "importBackupInput", "castDialog", "closeCastButton",
+      "importBackupButton", "restoreBackupButton", "selectAutoBackupButton", "clearAutoBackupButton",
+      "autoBackupStatus", "importBackupInput", "castDialog", "closeCastButton",
       "modalAddCastButton", "modalParseCastButton", "modalCastList", "castEditorDialog",
       "castEditorTitle", "castAvatarPicker", "castAvatarFallback", "castAvatarImage",
       "castAvatarInput", "castNameInput", "castIdentityInput", "castAppearanceInput",
       "castImportanceInput", "castStateInput", "deleteCastButton", "saveCastButton",
       "memoryDialog", "closeMemoryButton", "memorySummaryText", "memoryWorldText",
-      "memoryRelationsText", "memoryThreadsText", "storiesDialog", "closeStoriesButton",
+      "memoryRelationsText", "memoryThreadsText", "summarizeNowButton", "memoryActionStatus",
+      "storiesDialog", "closeStoriesButton",
       "newStoryButton", "storyList", "messageActionDialog", "closeMessageActionButton",
       "messageActionPreview", "messageActionInstruction", "regenerateFromMessageButton",
       "generateVariantsButton", "editMessageButton", "editMessageDialog",
@@ -3617,6 +3968,15 @@ select:focus-visible,
     els.saveSettingsButton.addEventListener("click", function () {
       if (handlers.onSaveSettings) handlers.onSaveSettings(readSettingsForm());
     });
+    els.apiProfileSelect.addEventListener("change", function () {
+      if (handlers.onApplyApiProfile) handlers.onApplyApiProfile(els.apiProfileSelect.value);
+    });
+    els.saveApiProfileButton.addEventListener("click", function () {
+      if (handlers.onSaveApiProfile) handlers.onSaveApiProfile();
+    });
+    els.deleteApiProfileButton.addEventListener("click", function () {
+      if (handlers.onDeleteApiProfile) handlers.onDeleteApiProfile(els.apiProfileSelect.value);
+    });
     els.testConnectionButton.addEventListener("click", function () {
       if (handlers.onTestConnection) handlers.onTestConnection(readSettingsForm());
     });
@@ -3639,6 +3999,12 @@ select:focus-visible,
     });
     els.restoreBackupButton.addEventListener("click", function () {
       if (handlers.onRestoreBackup) handlers.onRestoreBackup();
+    });
+    els.selectAutoBackupButton.addEventListener("click", function () {
+      if (handlers.onSelectAutoBackup) handlers.onSelectAutoBackup();
+    });
+    els.clearAutoBackupButton.addEventListener("click", function () {
+      if (handlers.onClearAutoBackup) handlers.onClearAutoBackup();
     });
 
     els.startStoryButton.addEventListener("click", function () {
@@ -3677,10 +4043,14 @@ select:focus-visible,
       closeDialog(els.castDialog);
     });
     els.openMemoryButton.addEventListener("click", function () {
+      els.memoryActionStatus.textContent = "";
       openDialog(els.memoryDialog);
     });
     els.closeMemoryButton.addEventListener("click", function () {
       closeDialog(els.memoryDialog);
+    });
+    els.summarizeNowButton.addEventListener("click", function () {
+      if (handlers.onSummarizeNow) handlers.onSummarizeNow();
     });
     els.undoButton.addEventListener("click", function () {
       if (handlers.onUndo) handlers.onUndo();
@@ -3974,9 +4344,10 @@ select:focus-visible,
   }
 
   function renderChat(state, viewState) {
+    lastCast = state.cast || [];
     els.chatTitle.textContent = Util.deriveTitle(state.story.background, state.story.title);
     renderCastStrip(state.cast);
-    renderMessages(state.messages, state.user, viewState);
+    renderMessages(state.messages, state.user, viewState, state.cast);
     renderMemoryStatus(state, viewState);
     els.undoButton.disabled = !(state.checkpoints && state.checkpoints.length) || !!viewState.busy;
     setBusy(!!viewState.busy);
@@ -4003,7 +4374,7 @@ select:focus-visible,
     });
   }
 
-  function renderMessages(messages, user, viewState) {
+  function renderMessages(messages, user, viewState, cast) {
     var list = els.messageList;
     var shouldStick = list.scrollHeight - list.scrollTop - list.clientHeight < 180;
     list.replaceChildren();
@@ -4027,10 +4398,9 @@ select:focus-visible,
       if (message.role === "user") {
         row.appendChild(createAvatar(user.avatar, "message-avatar", user.name || "你"));
       } else {
-        var narrator = document.createElement("span");
-        narrator.className = "message-avatar";
-        narrator.textContent = "叙";
-        row.appendChild(narrator);
+        renderAssistantContent(row, message, cast);
+        list.appendChild(row);
+        return;
       }
 
       var wrap = document.createElement("div");
@@ -4057,14 +4427,49 @@ select:focus-visible,
     if (viewState && viewState.forceBottom || shouldStick) scrollToBottom();
   }
 
+  function renderAssistantContent(row, message, cast) {
+    row.replaceChildren();
+    var blocks = YuC.Speakers.parse(message.content || "", cast || lastCast || []);
+    var segments = document.createElement("div");
+    segments.className = "message-segments";
+    blocks.forEach(function (block) {
+      var segment = document.createElement("div");
+      segment.className = "speaker-row";
+      if (block.narrator) {
+        var narrator = document.createElement("span");
+        narrator.className = "message-avatar";
+        narrator.textContent = "叙";
+        segment.appendChild(narrator);
+      } else {
+        segment.appendChild(createAvatar(block.avatar, "message-avatar", block.name));
+      }
+      var wrap = document.createElement("div");
+      wrap.className = "message-content-wrap";
+      var label = document.createElement("div");
+      label.className = "message-label";
+      label.textContent = block.name || "旁白";
+      var bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+      bubble.textContent = block.text;
+      wrap.append(label, bubble);
+      segment.appendChild(wrap);
+      segments.appendChild(segment);
+    });
+    row.appendChild(segments);
+  }
+
   function updateStreamingMessage(message) {
     if (!message) return;
     var row = els.messageList.querySelector('[data-message-id="' + cssEscape(message.id) + '"]');
     if (!row) return;
     row.classList.toggle("streaming", !!message.streaming);
     row.classList.toggle("error", !!message.error);
-    var bubble = row.querySelector(".message-bubble");
-    if (bubble) bubble.textContent = message.content || "";
+    if (row.classList.contains("assistant")) {
+      renderAssistantContent(row, message, lastCast);
+    } else {
+      var bubble = row.querySelector(".message-bubble");
+      if (bubble) bubble.textContent = message.content || "";
+    }
     scrollToBottom();
   }
 
@@ -4102,6 +4507,12 @@ select:focus-visible,
     els.memoryThreadsText.textContent = state.memory.openThreads || "—";
   }
 
+  function setMemoryActionStatus(text, isError) {
+    els.memoryActionStatus.textContent = text || "";
+    els.memoryActionStatus.classList.toggle("error", !!isError);
+    els.summarizeNowButton.disabled = /正在/.test(text || "");
+  }
+
   function setBusy(busy) {
     els.continueButton.disabled = busy;
     els.sendButton.disabled = busy;
@@ -4126,7 +4537,7 @@ select:focus-visible,
     }, 2600);
   }
 
-  function openSettings(state, key) {
+  function openSettings(state, key, profiles) {
     setValue(els.connectionModeInput, state.api.mode);
     setValue(els.endpointInput, state.api.endpoint);
     setValue(els.relayEndpointInput, state.api.relayEndpoint);
@@ -4142,8 +4553,29 @@ select:focus-visible,
     setValue(els.temperaturePresetInput, nearest);
     els.settingsStatus.textContent = "";
     els.settingsStatus.classList.remove("error");
+    fillApiProfiles(profiles || [], state.api.profileId);
     refreshBackupStatus();
     openDialog(els.settingsDialog);
+  }
+
+  function fillApiProfiles(profiles, selectedId) {
+    els.apiProfileSelect.replaceChildren();
+    var custom = document.createElement("option");
+    custom.value = "";
+    custom.textContent = "当前自定义配置";
+    els.apiProfileSelect.appendChild(custom);
+    (profiles || []).forEach(function (profile) {
+      var option = document.createElement("option");
+      option.value = profile.id;
+      option.textContent = profile.name;
+      els.apiProfileSelect.appendChild(option);
+    });
+    els.apiProfileSelect.value = selectedId || "";
+    els.deleteApiProfileButton.disabled = !els.apiProfileSelect.value;
+  }
+
+  function setSelectedApiProfile(id, profiles) {
+    fillApiProfiles(profiles, id);
   }
 
   function readSettingsForm() {
@@ -4155,7 +4587,8 @@ select:focus-visible,
         model: els.modelInput.value.trim(),
         temperature: Number(els.temperaturePresetInput.value),
         replyLength: els.replyLengthInput.value,
-        rememberKey: !!els.rememberKeyInput.checked
+        rememberKey: !!els.rememberKeyInput.checked,
+        profileId: els.apiProfileSelect.value || ""
       },
       key: els.apiKeyInput.value.trim()
     };
@@ -4168,6 +4601,11 @@ select:focus-visible,
 
   function refreshBackupStatus() {
     if (els.backupStatus) els.backupStatus.textContent = YuC.Backup.describeLatest();
+  }
+
+  function setAutoBackupStatus(text, isError) {
+    els.autoBackupStatus.textContent = text || "";
+    els.autoBackupStatus.classList.toggle("error", !!isError);
   }
 
   function closeSettings() {
@@ -4323,10 +4761,12 @@ select:focus-visible,
     clearMessageInput: clearMessageInput,
     toast: toast,
     openSettings: openSettings,
+    setSelectedApiProfile: setSelectedApiProfile,
     closeSettings: closeSettings,
     readSettingsForm: readSettingsForm,
     setSettingsStatus: setSettingsStatus,
     refreshBackupStatus: refreshBackupStatus,
+    setAutoBackupStatus: setAutoBackupStatus,
     openCastEditor: openCastEditor,
     readCastForm: readCastForm,
     closeCastEditor: closeCastEditor,
@@ -4340,6 +4780,7 @@ select:focus-visible,
     showVariantsLoading: showVariantsLoading,
     setVariantsStatus: setVariantsStatus,
     renderVariants: renderVariants,
+    setMemoryActionStatus: setMemoryActionStatus,
     closeMessageAction: closeMessageAction,
     closeVariants: closeVariants,
     closeDialog: closeDialog,
@@ -4354,13 +4795,17 @@ select:focus-visible,
 
   var YuC = root.YuC;
   var Util = YuC.Util;
-  var envelope = YuC.Store.loadEnvelope();
-  var stories = envelope.stories;
-  var activeStoryId = envelope.activeStoryId;
-  var state = activeStory();
+  var envelope = null;
+  var stories = [];
+  var profiles = [];
+  var activeStoryId = "";
+  var state = null;
+  var fileBackupHandle = null;
+  var fileBackupTimer = 0;
+  var fileBackupChain = Promise.resolve();
   var viewState = {
-    view: (state.story.startedAt || state.messages.length) ? "chat" : "setup",
-    apiKey: YuC.Store.readApiKey(state.id, state.api.rememberKey),
+    view: "setup",
+    apiKey: "",
     busy: false,
     parsing: false,
     memoryBusy: false,
@@ -4394,22 +4839,40 @@ select:focus-visible,
     return {
       version: 2,
       activeStoryId: activeStoryId,
-      stories: stories
+      stories: stories,
+      profiles: profiles
     };
   }
 
   function saveNow() {
-    try {
-      state.updatedAt = Date.now();
-      YuC.Store.saveEnvelope(currentEnvelope());
-    } catch (error) {
-      YuC.UI.toast("保存失败，可能是本地存储空间不足");
-    }
+    if (!state) return Promise.resolve(false);
+    state.updatedAt = Date.now();
+    return YuC.IdbStore.saveEnvelope(currentEnvelope()).catch(async function () {
+      stories.forEach(function (story) {
+        story.checkpoints = story.checkpoints.slice(-3);
+      });
+      state.checkpoints = state.checkpoints.slice(-3);
+      try {
+        await YuC.IdbStore.saveEnvelope(currentEnvelope());
+        YuC.UI.toast("存储空间不足，已自动清理较早的撤回记录");
+        return true;
+      } catch (retryError) {}
+      for (var attempt = 0; attempt < 5; attempt += 1) {
+        if (!YuC.Backup.removeOldest()) break;
+        try {
+          await YuC.IdbStore.saveEnvelope(currentEnvelope());
+          YuC.UI.toast("存储空间不足，已清理旧自动备份并保存当前进度");
+          return true;
+        } catch (retryError2) {}
+      }
+      YuC.UI.toast("保存失败：本地存储已满，请先导出备份并清理浏览器数据");
+      return false;
+    });
   }
 
   function saveSoon() {
     clearTimeout(viewState.saveTimer);
-    viewState.saveTimer = setTimeout(saveNow, 350);
+    viewState.saveTimer = setTimeout(function () { saveNow(); }, 350);
   }
 
   function backupNow(reason) {
@@ -4417,10 +4880,120 @@ select:focus-visible,
       var result = YuC.Backup.auto(currentEnvelope(), reason);
       if (result.error && !result.skipped) console.warn(result.error);
       YuC.UI.refreshBackupStatus();
+      scheduleAutoFileBackup();
       return result;
     } catch (error) {
       console.warn("自动备份失败", error);
       return { created: false, error: error.message || String(error) };
+    }
+  }
+
+  function scheduleAutoFileBackup() {
+    if (!fileBackupHandle) return;
+    clearTimeout(fileBackupTimer);
+    fileBackupTimer = setTimeout(function () {
+      fileBackupChain = fileBackupChain.catch(function () {}).then(writeAutoFileBackup);
+    }, 500);
+  }
+
+  function filePermission(handle, request) {
+    var options = { mode: "readwrite" };
+    if (!handle.queryPermission || !handle.requestPermission) return Promise.resolve(false);
+    return handle.queryPermission(options).then(function (permission) {
+      if (permission === "granted") return true;
+      if (!request) return false;
+      return handle.requestPermission(options).then(function (next) {
+        return next === "granted";
+      });
+    }).catch(function () { return false; });
+  }
+
+  async function writeAutoFileBackup() {
+    if (!fileBackupHandle) return false;
+    var granted = await filePermission(fileBackupHandle, false);
+    if (!granted) {
+      YuC.UI.setAutoBackupStatus("需要重新授权备份文件", true);
+      return false;
+    }
+    try {
+      var writable = await fileBackupHandle.createWritable();
+      await writable.write(YuC.Backup.exportText(currentEnvelope()));
+      await writable.close();
+      YuC.UI.setAutoBackupStatus("已自动写入：" + fileBackupHandle.name + " · " +
+        new Date().toLocaleTimeString("zh-CN", { hour12: false }));
+      return true;
+    } catch (error) {
+      YuC.UI.setAutoBackupStatus("自动备份写入失败：" + (error.message || error), true);
+      return false;
+    }
+  }
+
+  async function selectAutoBackupFile() {
+    if (!root.showSaveFilePicker) {
+      YuC.UI.setAutoBackupStatus("当前浏览器不支持自动写入文件；iPhone 请使用手动导出。", true);
+      return;
+    }
+    try {
+      if (fileBackupHandle) {
+        var granted = await filePermission(fileBackupHandle, true);
+        if (granted) {
+          YuC.UI.setAutoBackupStatus("已重新授权：" + fileBackupHandle.name);
+          scheduleAutoFileBackup();
+          return;
+        }
+      }
+      var handle = await root.showSaveFilePicker({
+        suggestedName: "语C-自动备份.json",
+        types: [{
+          description: "语C JSON 备份",
+          accept: { "application/json": [".json"] }
+        }]
+      });
+      fileBackupHandle = handle;
+      await YuC.IdbStore.saveBackupHandle(handle);
+      YuC.UI.els.clearAutoBackupButton.disabled = false;
+      YuC.UI.setAutoBackupStatus("已连接：" + handle.name);
+      await writeAutoFileBackup();
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+      YuC.UI.setAutoBackupStatus("选择备份文件失败：" + (error.message || error), true);
+    }
+  }
+
+  async function clearAutoBackupFile() {
+    fileBackupHandle = null;
+    clearTimeout(fileBackupTimer);
+    try {
+      await YuC.IdbStore.clearBackupHandle();
+      YuC.UI.setAutoBackupStatus("自动文件备份已关闭");
+    } catch (error) {
+      YuC.UI.setAutoBackupStatus("关闭失败：" + (error.message || error), true);
+    }
+  }
+
+  async function initAutoFileBackup() {
+    var selectButton = YuC.UI.els.selectAutoBackupButton;
+    var clearButton = YuC.UI.els.clearAutoBackupButton;
+    if (!root.showSaveFilePicker) {
+      selectButton.disabled = true;
+      clearButton.disabled = true;
+      YuC.UI.setAutoBackupStatus("iPhone 浏览器不支持自动写文件，请用“导出 JSON”。");
+      return;
+    }
+    try {
+      fileBackupHandle = await YuC.IdbStore.loadBackupHandle();
+      if (!fileBackupHandle) {
+        clearButton.disabled = true;
+        YuC.UI.setAutoBackupStatus("可选择一个 JSON 文件，之后自动覆盖备份。");
+        return;
+      }
+      clearButton.disabled = false;
+      var granted = await filePermission(fileBackupHandle, false);
+      YuC.UI.setAutoBackupStatus(granted
+        ? "已连接：" + fileBackupHandle.name
+        : "需要点击“选择备份文件”重新授权", !granted);
+    } catch (error) {
+      YuC.UI.setAutoBackupStatus("自动备份初始化失败：" + (error.message || error), true);
     }
   }
 
@@ -4440,7 +5013,7 @@ select:focus-visible,
   function requireApi() {
     if (viewState.apiKey) return true;
     YuC.UI.toast("请先填写 API Key");
-    YuC.UI.openSettings(state, viewState.apiKey);
+    YuC.UI.openSettings(state, viewState.apiKey, profiles);
     return false;
   }
 
@@ -4505,14 +5078,20 @@ select:focus-visible,
         saveSoon();
       },
       onOpenSettings: function () {
-        YuC.UI.openSettings(state, viewState.apiKey);
+        YuC.UI.openSettings(state, viewState.apiKey, profiles);
       },
+      onApplyApiProfile: applyApiProfile,
+      onSaveApiProfile: saveApiProfile,
+      onDeleteApiProfile: deleteApiProfile,
       onSaveSettings: saveSettings,
       onTestConnection: testConnection,
       onExportBackup: exportBackup,
       onExportPortable: exportPortable,
       onImportBackup: importBackup,
       onRestoreBackup: restoreBackup,
+      onSummarizeNow: summarizeNow,
+      onSelectAutoBackup: selectAutoBackupFile,
+      onClearAutoBackup: clearAutoBackupFile,
       onOpenStories: openStories,
       onNewStory: newStory,
       onSelectStory: selectStory,
@@ -4582,6 +5161,7 @@ select:focus-visible,
     fresh.style = YuC.Util.clone(state.style);
     stories.unshift(fresh);
     state = fresh;
+    fresh.api.profileId = "";
     activeStoryId = fresh.id;
     viewState.apiKey = "";
     YuC.Store.saveApiKey(fresh.id, "", fresh.api.rememberKey);
@@ -4661,7 +5241,7 @@ select:focus-visible,
 
   function prepareTruncation(index) {
     var priorMemory = memoryCheckpointForIndex(index);
-    YuC.State.makeCheckpoint(state);
+    YuC.State.makeCheckpoint(state, { captureMessages: true });
     if (priorMemory) {
       YuC.State.restoreCheckpoint(state, priorMemory);
     } else {
@@ -4769,7 +5349,7 @@ select:focus-visible,
     }
     var message = findMessage(viewState.actionMessageId);
     if (!message) return;
-    YuC.State.makeCheckpoint(state);
+    YuC.State.makeCheckpoint(state, { captureMessages: true });
     message.content = content;
     message.error = false;
     message.complete = true;
@@ -4778,7 +5358,7 @@ select:focus-visible,
     backupNow("手动改写");
     YuC.UI.closeDialog(YuC.UI.els.editMessageDialog);
     render(true);
-    YuC.UI.toast("旁白内容已替换，可撤销");
+    YuC.UI.toast("旁白内容已替换，可点顶部“撤销”恢复");
   }
 
   function chooseVariant(index) {
@@ -4804,7 +5384,7 @@ select:focus-visible,
     backupNow("选择候选版本");
     YuC.UI.closeVariants();
     render(true);
-    YuC.UI.toast("已采用所选版本，可撤销");
+    YuC.UI.toast("已采用所选版本，可点顶部“撤销”恢复");
   }
 
   function timestampForFile(date) {
@@ -4854,8 +5434,8 @@ select:focus-visible,
 
   function readJsonFile(file) {
     return new Promise(function (resolve, reject) {
-      if (!file || file.size > 10 * 1024 * 1024) {
-        reject(new Error("备份文件为空或超过 10 MB"));
+      if (!file || file.size > 100 * 1024 * 1024) {
+        reject(new Error("备份文件为空或超过 100 MB"));
         return;
       }
       var reader = new FileReader();
@@ -4868,6 +5448,7 @@ select:focus-visible,
   function applyRestoredState(restored) {
     envelope = YuC.State.sanitizeEnvelope(restored);
     stories = envelope.stories;
+    profiles = envelope.profiles || [];
     activeStoryId = envelope.activeStoryId;
     state = activeStory();
     YuC.App.state = state;
@@ -4909,6 +5490,117 @@ select:focus-visible,
     }
   }
 
+  async function summarizeNow() {
+    if (viewState.busy) return;
+    if (!state.messages.length) {
+      YuC.UI.setMemoryActionStatus("当前还没有可整理的剧情。", true);
+      return;
+    }
+    if (!requireApi()) return;
+    viewState.busy = true;
+    viewState.memoryBusy = true;
+    viewState.memoryStatus = "正在整理剧情记忆…";
+    viewState.abortController = new AbortController();
+    YuC.UI.setMemoryActionStatus("正在根据完整历史重建记忆…");
+    render(false);
+    try {
+      var result = await YuC.Memory.maybeSummarize({
+        state: state,
+        key: viewState.apiKey,
+        signal: viewState.abortController.signal,
+        force: true,
+        onStatus: function (status) {
+          viewState.memoryStatus = status;
+          YuC.UI.setMemoryActionStatus(status);
+          render(false);
+        }
+      });
+      if (result.error) {
+        YuC.UI.setMemoryActionStatus(result.error, true);
+        YuC.UI.toast("手动整理记忆失败");
+      } else {
+        YuC.UI.setMemoryActionStatus("记忆已手动更新。");
+        YuC.UI.toast("剧情记忆已更新");
+      }
+      saveNow();
+      backupNow("手动整理记忆");
+    } catch (error) {
+      YuC.UI.setMemoryActionStatus(YuC.Api.describeError(error), true);
+    } finally {
+      viewState.busy = false;
+      viewState.memoryBusy = false;
+      viewState.memoryStatus = "";
+      viewState.abortController = null;
+      render(false);
+    }
+  }
+
+  function applyApiProfile(id) {
+    if (!id) {
+      state.api.profileId = "";
+      saveNow();
+      YuC.UI.setSettingsStatus("已切换到当前故事的自定义配置");
+      return;
+    }
+    var profile = profiles.find(function (item) { return item.id === id; });
+    if (!profile) return;
+    state.api = YuC.Util.clone(profile.api);
+    state.api.profileId = profile.id;
+    viewState.apiKey = YuC.Store.readApiKey(profile.id, profile.api.rememberKey);
+    YuC.Store.saveApiKey(state.id, viewState.apiKey, profile.api.rememberKey);
+    saveNow();
+    backupNow("切换接口配置");
+    YuC.UI.openSettings(state, viewState.apiKey, profiles);
+    YuC.UI.setSettingsStatus("已载入配置：" + profile.name);
+  }
+
+  function saveApiProfile() {
+    var data = YuC.UI.readSettingsForm();
+    var name = Util.clampText(root.prompt("给这套接口配置起个名称：", data.api.model || "新配置"), 60);
+    if (!name) return;
+    var existing = profiles.find(function (item) {
+      return item.name.toLowerCase() === name.toLowerCase();
+    });
+    var id = existing ? existing.id : Util.uid("profile");
+    var profile = {
+      id: id,
+      name: name,
+      api: YuC.Util.clone(data.api),
+      createdAt: existing ? existing.createdAt : Date.now()
+    };
+    profile.api.profileId = id;
+    if (existing) {
+      var index = profiles.indexOf(existing);
+      profiles[index] = profile;
+    } else {
+      profiles.push(profile);
+    }
+    state.api = YuC.Util.clone(profile.api);
+    viewState.apiKey = data.key;
+    YuC.Store.saveApiKey(id, data.key, data.api.rememberKey);
+    YuC.Store.saveApiKey(state.id, data.key, data.api.rememberKey);
+    saveNow();
+    backupNow("保存接口配置");
+    YuC.UI.openSettings(state, viewState.apiKey, profiles);
+    YuC.UI.setSettingsStatus("接口配置已保存，可随时切换");
+  }
+
+  function deleteApiProfile(id) {
+    if (!id) {
+      YuC.UI.setSettingsStatus("请先选择要删除的保存配置", true);
+      return;
+    }
+    var profile = profiles.find(function (item) { return item.id === id; });
+    if (!profile || !root.confirm("删除接口配置“" + profile.name + "”？当前填写的地址和模型不会变化。")) return;
+    profiles = profiles.filter(function (item) { return item.id !== id; });
+    YuC.Store.saveApiKey(id, "", false);
+    if (state.api.profileId === id) state.api.profileId = "";
+    saveNow();
+    backupNow("删除接口配置");
+    YuC.UI.openSettings(state, viewState.apiKey, profiles);
+    YuC.UI.setSettingsStatus("接口配置已删除");
+  }
+
   function saveSettings(data) {
     var api = data.api;
     if (!api.endpoint) {
@@ -4926,6 +5618,27 @@ select:focus-visible,
       YuC.UI.setSettingsStatus(error.message || String(error), true);
       return;
     }
+    var selectedProfile = profiles.find(function (profile) {
+      return profile.id === api.profileId;
+    });
+    function apiSignature(value) {
+      return JSON.stringify({
+        mode: value.mode,
+        endpoint: value.endpoint,
+        relayEndpoint: value.relayEndpoint,
+        model: value.model,
+        temperature: Number(value.temperature),
+        replyLength: value.replyLength,
+        rememberKey: !!value.rememberKey
+      });
+    }
+    if (selectedProfile && apiSignature(selectedProfile.api) !== apiSignature(api)) {
+      api.profileId = "";
+    }
+    if (selectedProfile) {
+      var profileKey = YuC.Store.readApiKey(selectedProfile.id, selectedProfile.api.rememberKey);
+      if (profileKey !== data.key) api.profileId = "";
+    }
     state.api = {
       mode: api.mode,
       endpoint: api.endpoint,
@@ -4933,7 +5646,8 @@ select:focus-visible,
       model: api.model || "deepseek-chat",
       temperature: Math.max(0, Math.min(1.5, Number(api.temperature) || 1)),
       replyLength: api.replyLength || "short",
-      rememberKey: !!api.rememberKey
+      rememberKey: !!api.rememberKey,
+      profileId: api.profileId || ""
     };
     viewState.apiKey = data.key;
     try {
@@ -5149,6 +5863,9 @@ select:focus-visible,
         backupNow(assistantMessage.stopped ? "停止生成" : (assistantMessage.error ? "生成失败" : "AI消息"));
       }
       render(true);
+      if (options && options.skipCheckpoint && !assistantMessage.error) {
+        YuC.UI.toast("已从这里重新生成，可点顶部“撤销”恢复");
+      }
     }
   }
 
@@ -5214,20 +5931,37 @@ select:focus-visible,
     YuC.UI.toast("人物已删除");
   }
 
-  bindHandlers();
-  YuC.UI.showView(viewState.view);
-  render(false);
-  if (state.story.background || state.messages.length) backupNow("打开应用");
-  if (YuC.Store.source() === "embedded") YuC.UI.toast("已从 HTML 内置存档恢复记录");
+  async function boot() {
+    envelope = await YuC.IdbStore.loadEnvelope();
+    stories = envelope.stories;
+    profiles = envelope.profiles || [];
+    activeStoryId = envelope.activeStoryId;
+    state = activeStory();
+    viewState.view = (state.story.startedAt || state.messages.length) ? "chat" : "setup";
+    viewState.apiKey = YuC.Store.readApiKey(state.id, state.api.rememberKey);
+    YuC.App = {
+      state: state,
+      viewState: viewState,
+      saveNow: saveNow,
+      render: render,
+      getEnvelope: currentEnvelope,
+      getStories: function () { return stories; },
+      getProfiles: function () { return profiles; }
+    };
+    bindHandlers();
+    await initAutoFileBackup();
+    YuC.UI.showView(viewState.view);
+    render(false);
+    if (state.story.background || state.messages.length) backupNow("打开应用");
+    if (YuC.IdbStore.source() === "embedded") {
+      YuC.UI.toast("已从 HTML 内置存档恢复记录");
+    }
+  }
 
-  YuC.App = {
-    state: state,
-    viewState: viewState,
-    saveNow: saveNow,
-    render: render,
-    getEnvelope: currentEnvelope,
-    getStories: function () { return stories; }
-  };
+  boot().catch(function (error) {
+    console.error(error);
+    document.body.textContent = "语C 启动失败：请刷新页面。如果仍失败，请先用旧版导出 JSON。";
+  });
 })(typeof globalThis !== "undefined" ? globalThis : this);
 
   </script>
