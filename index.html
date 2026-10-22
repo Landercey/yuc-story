@@ -1840,6 +1840,12 @@ select:focus-visible,
         <button class="icon-button" id="closeMemoryButton" type="button" aria-label="关闭">×</button>
       </header>
       <div class="modal-body memory-body">
+        <label class="field compact-field">
+          <span>记忆更新使用的接口</span>
+          <select id="memoryProfileSelect">
+            <option value="">跟随当前故事的聊天配置</option>
+          </select>
+        </label>
         <section>
           <h3>剧情摘要</h3>
           <p id="memorySummaryText">还没有建立摘要。</p>
@@ -2043,7 +2049,8 @@ select:focus-visible,
         summaryCount: 0,
         turnsSinceSummary: 0,
         lastSummarizedMessageCount: 0,
-        lastError: ""
+        lastError: "",
+        apiProfileId: ""
       },
       checkpointSchema: 2,
       checkpoints: [],
@@ -2141,6 +2148,7 @@ select:focus-visible,
     base.memory.turnsSinceSummary = Math.max(0, Number(memory.turnsSinceSummary) || 0);
     base.memory.lastSummarizedMessageCount = Math.max(0, Number(memory.lastSummarizedMessageCount) || 0);
     base.memory.lastError = clampText(memory.lastError, 1000);
+    base.memory.apiProfileId = clampText(memory.apiProfileId, 80);
 
     var checkpointSchema = Number(source.checkpointSchema) || 0;
     base.checkpoints = Array.isArray(source.checkpoints)
@@ -3304,7 +3312,23 @@ select:focus-visible,
   }
 
   function parseSummaryResponse(text) {
-    var parsed = YuC.Importer.extractJsonValue(text);
+    var raw = String(text || "").trim();
+    var parsed;
+    try {
+      parsed = YuC.Importer.extractJsonValue(raw);
+    } catch (error) {
+      if (!raw || raw.length < 20 || /^(抱歉|对不起|无法|不能|错误|error|i can't|cannot)/i.test(raw)) {
+        throw new Error("回复中没有可解析的 JSON：" + raw.slice(0, 160));
+      }
+      return {
+        summary: asText(raw.replace(/^```(?:text|markdown)?\s*/i, "").replace(/\s*```$/i, ""), 20000),
+        worldState: "",
+        relationships: "",
+        openThreads: "",
+        characterUpdates: [],
+        fallback: true
+      };
+    }
     if (Array.isArray(parsed) || !parsed || typeof parsed !== "object") {
       throw new Error("摘要结果不是对象");
     }
@@ -3323,7 +3347,8 @@ select:focus-visible,
         };
       }).filter(function (item) {
         return item.name && item.currentState;
-      })
+      }),
+      fallback: false
     };
   }
 
@@ -3379,11 +3404,12 @@ select:focus-visible,
 
     try {
       var text = await YuC.Api.requestText({
-        api: state.api,
+        api: options.api || state.api,
         key: key,
         messages: YuC.Prompt.buildSummaryMessages(state, rebuild),
         temperature: 0.2,
-        maxTokens: 2200,
+        maxTokens: 3500,
+        responseFormat: { type: "json_object" },
         signal: signal
       });
       var parsed = YuC.Prompt.parseSummaryResponse(text);
@@ -3396,12 +3422,17 @@ select:focus-visible,
       state.memory.lastSummarizedMessageCount = state.messages.length;
       state.memory.lastError = "";
       YuC.Prompt.mergeCharacterUpdates(state.cast, parsed.characterUpdates);
-      if (options.onStatus) options.onStatus(rebuild ? "完整记忆已重建" : "剧情记忆已更新");
+      if (options.onStatus) {
+        options.onStatus(parsed.fallback
+          ? "记忆已更新（文本降级）"
+          : (rebuild ? "完整记忆已重建" : "剧情记忆已更新"));
+      }
       return {
         skipped: false,
         updated: true,
         rebuild: rebuild,
         error: "",
+        fallback: !!parsed.fallback,
         characterUpdates: parsed.characterUpdates.length
       };
     } catch (error) {
@@ -3680,7 +3711,7 @@ select:focus-visible,
     }
   }
 
-  async function performNonStream(attempt, body, key, signal) {
+  async function performNonStream(attempt, body, key, signal, allowFormatFallback) {
     var timeout = withTimeout(signal, 90000);
     try {
       var response = await fetch(attempt.url, {
@@ -3689,7 +3720,14 @@ select:focus-visible,
         body: JSON.stringify(body),
         signal: timeout.signal
       });
-      if (!response.ok) await readError(response, attempt.url);
+      if (!response.ok) {
+        if (response.status === 400 && body.response_format && allowFormatFallback !== false) {
+          var retryBody = Object.assign({}, body);
+          delete retryBody.response_format;
+          return performNonStream(attempt, retryBody, key, signal, false);
+        }
+        await readError(response, attempt.url);
+      }
       var text = await response.text();
       var payload;
       try {
@@ -3760,6 +3798,7 @@ select:focus-visible,
       stream: false
     };
     if (options.maxTokens) body.max_tokens = options.maxTokens;
+    if (options.responseFormat) body.response_format = options.responseFormat;
     return withFallback(api, key, options.signal, function (attempt) {
       return performNonStream(attempt, body, key, options.signal);
     });
@@ -3904,6 +3943,7 @@ select:focus-visible,
       "castImportanceInput", "castStateInput", "deleteCastButton", "saveCastButton",
       "memoryDialog", "closeMemoryButton", "memorySummaryText", "memoryWorldText",
       "memoryRelationsText", "memoryThreadsText", "summarizeNowButton", "memoryActionStatus",
+      "memoryProfileSelect",
       "storiesDialog", "closeStoriesButton",
       "newStoryButton", "storyList", "messageActionDialog", "closeMessageActionButton",
       "messageActionPreview", "messageActionInstruction", "regenerateFromMessageButton",
@@ -4044,6 +4084,7 @@ select:focus-visible,
     });
     els.openMemoryButton.addEventListener("click", function () {
       els.memoryActionStatus.textContent = "";
+      if (handlers.onOpenMemory) handlers.onOpenMemory();
       openDialog(els.memoryDialog);
     });
     els.closeMemoryButton.addEventListener("click", function () {
@@ -4051,6 +4092,9 @@ select:focus-visible,
     });
     els.summarizeNowButton.addEventListener("click", function () {
       if (handlers.onSummarizeNow) handlers.onSummarizeNow();
+    });
+    els.memoryProfileSelect.addEventListener("change", function () {
+      if (handlers.onMemoryProfileChange) handlers.onMemoryProfileChange(els.memoryProfileSelect.value);
     });
     els.undoButton.addEventListener("click", function () {
       if (handlers.onUndo) handlers.onUndo();
@@ -4513,6 +4557,21 @@ select:focus-visible,
     els.summarizeNowButton.disabled = /正在/.test(text || "");
   }
 
+  function fillMemoryProfiles(profiles, selectedId) {
+    els.memoryProfileSelect.replaceChildren();
+    var follow = document.createElement("option");
+    follow.value = "";
+    follow.textContent = "跟随当前故事的聊天配置";
+    els.memoryProfileSelect.appendChild(follow);
+    (profiles || []).forEach(function (profile) {
+      var option = document.createElement("option");
+      option.value = profile.id;
+      option.textContent = profile.name;
+      els.memoryProfileSelect.appendChild(option);
+    });
+    els.memoryProfileSelect.value = selectedId || "";
+  }
+
   function setBusy(busy) {
     els.continueButton.disabled = busy;
     els.sendButton.disabled = busy;
@@ -4781,6 +4840,7 @@ select:focus-visible,
     setVariantsStatus: setVariantsStatus,
     renderVariants: renderVariants,
     setMemoryActionStatus: setMemoryActionStatus,
+    fillMemoryProfiles: fillMemoryProfiles,
     closeMessageAction: closeMessageAction,
     closeVariants: closeVariants,
     closeDialog: closeDialog,
@@ -5090,6 +5150,8 @@ select:focus-visible,
       onImportBackup: importBackup,
       onRestoreBackup: restoreBackup,
       onSummarizeNow: summarizeNow,
+      onOpenMemory: openMemorySettings,
+      onMemoryProfileChange: changeMemoryProfile,
       onSelectAutoBackup: selectAutoBackupFile,
       onClearAutoBackup: clearAutoBackupFile,
       onOpenStories: openStories,
@@ -5490,13 +5552,44 @@ select:focus-visible,
     }
   }
 
+  function resolveMemoryApi() {
+    var profile = profiles.find(function (item) {
+      return item.id === state.memory.apiProfileId;
+    });
+    if (profile) {
+      return {
+        api: profile.api,
+        key: YuC.Store.readApiKey(profile.id, profile.api.rememberKey)
+      };
+    }
+    return { api: state.api, key: viewState.apiKey };
+  }
+
+  function openMemorySettings() {
+    YuC.UI.fillMemoryProfiles(profiles, state.memory.apiProfileId);
+  }
+
+  function changeMemoryProfile(id) {
+    state.memory.apiProfileId = id || "";
+    saveNow();
+    var config = resolveMemoryApi();
+    YuC.UI.setMemoryActionStatus(
+      config.key ? "记忆接口已切换。" : "这个记忆配置还没有 Key，请先到连接设置中填写。",
+      !config.key
+    );
+  }
+
   async function summarizeNow() {
     if (viewState.busy) return;
     if (!state.messages.length) {
       YuC.UI.setMemoryActionStatus("当前还没有可整理的剧情。", true);
       return;
     }
-    if (!requireApi()) return;
+    var memoryConfig = resolveMemoryApi();
+    if (!memoryConfig.key) {
+      YuC.UI.setMemoryActionStatus("记忆接口没有 API Key，请先到连接设置中填写。", true);
+      return;
+    }
     viewState.busy = true;
     viewState.memoryBusy = true;
     viewState.memoryStatus = "正在整理剧情记忆…";
@@ -5506,7 +5599,8 @@ select:focus-visible,
     try {
       var result = await YuC.Memory.maybeSummarize({
         state: state,
-        key: viewState.apiKey,
+        api: memoryConfig.api,
+        key: memoryConfig.key,
         signal: viewState.abortController.signal,
         force: true,
         onStatus: function (status) {
@@ -5519,8 +5613,8 @@ select:focus-visible,
         YuC.UI.setMemoryActionStatus(result.error, true);
         YuC.UI.toast("手动整理记忆失败");
       } else {
-        YuC.UI.setMemoryActionStatus("记忆已手动更新。");
-        YuC.UI.toast("剧情记忆已更新");
+        YuC.UI.setMemoryActionStatus(result.fallback ? "记忆已更新（模型返回文本，已降级保存）。" : "记忆已手动更新。");
+        YuC.UI.toast(result.fallback ? "记忆已降级保存" : "剧情记忆已更新");
       }
       saveNow();
       backupNow("手动整理记忆");
@@ -5818,9 +5912,11 @@ select:focus-visible,
         viewState.memoryBusy = true;
         viewState.memoryStatus = "正在整理剧情记忆…";
         render(false);
+        var memoryConfig = resolveMemoryApi();
         var result = await YuC.Memory.maybeSummarize({
           state: state,
-          key: viewState.apiKey,
+          api: memoryConfig.api,
+          key: memoryConfig.key,
           signal: viewState.abortController.signal,
           onStatus: function (status) {
             viewState.memoryStatus = status;
