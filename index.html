@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f4efe6">
+  <meta name="description" content="单文件、本地存储、可多故事管理的浏览器语C互动故事应用。">
   <meta name="format-detection" content="telephone=no,email=no,address=no">
   <title>语C · 背景故事</title>
   <style>
@@ -102,6 +103,12 @@ select:focus-visible,
 
 .setup-topbar {
   justify-content: space-between;
+}
+
+.setup-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .topbar h1,
@@ -242,6 +249,89 @@ select:focus-visible,
   color: var(--muted);
   font-size: 13px;
   line-height: 1.65;
+}
+
+.style-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.style-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(244, 239, 230, .45);
+  text-align: left;
+}
+
+.style-card:hover {
+  border-color: var(--line-strong);
+}
+
+.style-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.style-card strong {
+  display: block;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.style-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.style-sample {
+  display: block;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(189, 174, 156, .45);
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.detail-settings {
+  display: grid;
+  grid-template-columns: minmax(150px, .6fr) minmax(0, 1.4fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.detail-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.detail-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.detail-toggle input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
 }
 
 .field {
@@ -729,6 +819,10 @@ select:focus-visible,
   white-space: pre-wrap;
 }
 
+.message.assistant .message-bubble {
+  cursor: pointer;
+}
+
 .message.user .message-bubble {
   border-color: #dfc6b8;
   border-radius: 17px 5px 17px 17px;
@@ -1027,6 +1121,131 @@ select:focus-visible,
   white-space: pre-wrap;
 }
 
+.story-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.story-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(244, 239, 230, .45);
+}
+
+.story-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.story-main {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.story-card-title {
+  display: block;
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-card-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.story-delete {
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid #d8b6af;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--danger);
+}
+
+.message-action-preview {
+  max-height: 170px;
+  margin: 0 0 14px;
+  overflow-y: auto;
+  padding: 12px;
+  border-left: 3px solid var(--accent-soft);
+  background: rgba(244, 239, 230, .5);
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.message-action-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.action-card {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(244, 239, 230, .45);
+  text-align: left;
+}
+
+.action-card strong {
+  display: block;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.action-card span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.variant-list {
+  display: grid;
+  gap: 11px;
+}
+
+.variant-card {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(244, 239, 230, .4);
+}
+
+.variant-card-text {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.variant-card button {
+  margin-top: 11px;
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -1107,6 +1326,11 @@ select:focus-visible,
   }
 
   .cast-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .style-preset-grid,
+  .detail-settings {
     grid-template-columns: 1fr;
   }
 
@@ -1195,7 +1419,10 @@ select:focus-visible,
           <p class="eyebrow">背景驱动的持续演出</p>
           <h1>语C</h1>
         </div>
-        <button class="text-button" id="openSettingsButton" type="button">连接设置</button>
+        <div class="setup-top-actions">
+          <button class="text-button" id="openStoriesButton" type="button">故事</button>
+          <button class="text-button" id="openSettingsButton" type="button">连接设置</button>
+        </div>
       </header>
 
       <main class="setup-scroll">
@@ -1233,6 +1460,33 @@ select:focus-visible,
           <div class="section-heading">
             <div>
               <span class="step-number">02</span>
+              <h2>文风与描写</h2>
+            </div>
+            <span class="optional-label">随时可改</span>
+          </div>
+          <p class="section-help">选择一种叙事文风，并决定生成时允许使用哪些细节。</p>
+          <div class="style-preset-grid" id="stylePresetGrid"></div>
+          <label class="field" id="customStyleField" hidden>
+            <span>自定义文风</span>
+            <textarea id="customStyleInput" rows="4" maxlength="3000" placeholder="例如：使用短句，多写人物视线和手部动作，不写大段心理独白。"></textarea>
+          </label>
+          <div class="detail-settings">
+            <label class="field compact-field">
+              <span>描写密度</span>
+              <select id="detailLevelInput">
+                <option value="concise">精简</option>
+                <option value="balanced">适中</option>
+                <option value="rich">细腻</option>
+              </select>
+            </label>
+            <div class="detail-toggle-grid" id="detailToggleGrid"></div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-heading">
+            <div>
+              <span class="step-number">03</span>
               <h2>故事人物</h2>
             </div>
             <div class="heading-actions">
@@ -1249,7 +1503,7 @@ select:focus-visible,
         <section class="section-card">
           <div class="section-heading">
             <div>
-              <span class="step-number">03</span>
+              <span class="step-number">04</span>
               <h2>你的身份</h2>
             </div>
             <span class="optional-label">可选</span>
@@ -1295,6 +1549,7 @@ select:focus-visible,
         <div class="chat-tools">
           <button class="icon-button" id="undoButton" type="button" aria-label="撤销最后一条消息" title="撤销最后一条消息">↶</button>
           <button class="icon-button" id="openCastButton" type="button" aria-label="查看人物" title="查看人物">人</button>
+          <button class="icon-button" id="openChatStoriesButton" type="button" aria-label="切换故事" title="切换故事">册</button>
         </div>
       </header>
 
@@ -1364,8 +1619,14 @@ select:focus-visible,
           </select>
         </label>
         <label class="field">
-          <span>温度 <output id="temperatureOutput">1.0</output></span>
-          <input id="temperatureInput" type="range" min="0" max="1.5" step="0.1" value="1">
+          <span>创作变化程度</span>
+          <select id="temperaturePresetInput">
+            <option value="0.5">稳定 · 更贴合设定，变化少</option>
+            <option value="0.8">均衡 · 稳定与变化兼顾</option>
+            <option value="1">创意 · 表达更丰富，走向多样</option>
+            <option value="1.2">大胆 · 变化最大，也更容易跑偏</option>
+          </select>
+          <p class="fine-print">这不是“聪明程度”，只影响每次生成在多种合理写法之间跳动的幅度。</p>
         </label>
         <section class="backup-panel">
           <div class="backup-heading">
@@ -1488,6 +1749,95 @@ select:focus-visible,
     </div>
   </dialog>
 
+  <dialog class="modal" id="storiesDialog">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">独立世界与记录</p>
+          <h2>我的故事</h2>
+        </div>
+        <button class="icon-button" id="closeStoriesButton" type="button" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="modal-actions spread">
+          <span class="fine-print">每个故事分别保存背景、人物、接口、文风和聊天。</span>
+          <button class="accent-button" id="newStoryButton" type="button">新建故事</button>
+        </div>
+        <div class="story-list" id="storyList"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="messageActionDialog">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">旁白段落</p>
+          <h2>处理这一段</h2>
+        </div>
+        <button class="icon-button" id="closeMessageActionButton" type="button" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <p class="message-action-preview" id="messageActionPreview"></p>
+        <label class="field">
+          <span>本次要求 <em>可选</em></span>
+          <textarea id="messageActionInstruction" rows="3" maxlength="4000" placeholder="例如：换一个更克制的回应，重点写沈砚的动作。"></textarea>
+        </label>
+        <div class="message-action-list">
+          <button class="action-card" id="regenerateFromMessageButton" type="button">
+            <strong>从这里重新生成</strong>
+            <span>删除这一段及后续剧情，再生成新内容。撤销可恢复。</span>
+          </button>
+          <button class="action-card" id="generateVariantsButton" type="button">
+            <strong>生成 3 个版本</strong>
+            <span>保留当前剧情，生成备选后由你挑选。选定后会替换这一段。</span>
+          </button>
+          <button class="action-card" id="editMessageButton" type="button">
+            <strong>手动改写</strong>
+            <span>直接输入你满意的版本，替换这一段 AI 内容。</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="editMessageDialog">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">手动改写</p>
+          <h2>替换旁白内容</h2>
+        </div>
+        <button class="icon-button" id="closeEditMessageButton" type="button" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>正文</span>
+          <textarea id="editMessageText" rows="12"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="accent-button" id="saveEditedMessageButton" type="button">保存替换</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="variantsDialog">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">AI 候选版本</p>
+          <h2>选一个继续</h2>
+        </div>
+        <button class="icon-button" id="closeVariantsButton" type="button" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <p class="modal-status" id="variantsStatus"></p>
+        <div class="variant-list" id="variantList"></div>
+      </div>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="application/json" id="embeddedBackup">null</script>
@@ -1541,8 +1891,12 @@ select:focus-visible,
   }
 
   function defaultState() {
+    var now = Date.now();
+    var storyId = uid("story");
     return {
-      version: 1,
+      id: storyId,
+      createdAt: now,
+      updatedAt: now,
       story: {
         title: "",
         background: "",
@@ -1575,7 +1929,17 @@ select:focus-visible,
         lastSummarizedMessageCount: 0,
         lastError: ""
       },
-      checkpoints: []
+      checkpoints: [],
+      style: YuC.Styles ? YuC.Styles.defaultStyle() : undefined
+    };
+  }
+
+  function defaultEnvelope() {
+    var story = defaultState();
+    return {
+      version: 2,
+      activeStoryId: story.id,
+      stories: [story]
     };
   }
 
@@ -1620,6 +1984,9 @@ select:focus-visible,
     var user = source.user && typeof source.user === "object" ? source.user : {};
     var api = source.api && typeof source.api === "object" ? source.api : {};
     var memory = source.memory && typeof source.memory === "object" ? source.memory : {};
+    base.id = clampText(source.id, 80) || base.id;
+    base.createdAt = Number(source.createdAt) || base.createdAt;
+    base.updatedAt = Number(source.updatedAt) || base.createdAt;
 
     base.story.title = clampText(story.title, 60);
     base.story.background = String(story.background || "").slice(0, 60000);
@@ -1661,7 +2028,38 @@ select:focus-visible,
           return checkpoint && typeof checkpoint === "object";
         }).slice(-MAX_CHECKPOINTS)
       : [];
+    base.style = YuC.Styles ? YuC.Styles.sanitizeStyle(source.style) : source.style;
     return base;
+  }
+
+  function sanitizeEnvelope(raw) {
+    var source = raw && typeof raw === "object" ? raw : {};
+    var stories;
+    if (Array.isArray(source.stories)) {
+      stories = source.stories.map(sanitizeState);
+    } else if (source.story || source.messages || source.cast) {
+      stories = [sanitizeState(source)];
+    } else {
+      return defaultEnvelope();
+    }
+    if (!stories.length) return defaultEnvelope();
+    var seen = Object.create(null);
+    stories.forEach(function (story) {
+      if (seen[story.id]) story.id = uid("story");
+      seen[story.id] = true;
+    });
+    var activeStoryId = clampText(source.activeStoryId, 80);
+    if (!stories.some(function (story) { return story.id === activeStoryId; })) {
+      activeStoryId = stories[0].id;
+    }
+    return { version: 2, activeStoryId: activeStoryId, stories: stories };
+  }
+
+  function activeStory(envelope) {
+    var source = sanitizeEnvelope(envelope);
+    return source.stories.find(function (story) {
+      return story.id === source.activeStoryId;
+    }) || source.stories[0];
   }
 
   function getStorage() {
@@ -1687,37 +2085,61 @@ select:focus-visible,
     }
   }
 
-  function loadState() {
+  function loadEnvelope() {
     var storage = getStorage();
     if (!storage) {
       var embeddedOnly = readEmbeddedState();
       lastLoadSource = embeddedOnly ? "embedded" : "default";
-      return embeddedOnly ? sanitizeState(embeddedOnly) : defaultState();
+      var embeddedLoaded = embeddedOnly ? sanitizeEnvelope(embeddedOnly) : defaultEnvelope();
+      migrateLegacyApiKeys(embeddedLoaded.stories);
+      return embeddedLoaded;
     }
     try {
       var raw = storage.getItem(STORAGE_KEY);
       if (raw) {
         lastLoadSource = "local";
-        return sanitizeState(JSON.parse(raw));
+        var parsed = JSON.parse(raw);
+        var loaded = sanitizeEnvelope(parsed);
+        if (!Array.isArray(parsed.stories)) {
+          storage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+        }
+        migrateLegacyApiKeys(loaded.stories);
+        return loaded;
       }
       var embedded = readEmbeddedState();
       if (embedded) {
         lastLoadSource = "embedded";
-        return sanitizeState(embedded);
+        var embeddedState = sanitizeEnvelope(embedded);
+        migrateLegacyApiKeys(embeddedState.stories);
+        return embeddedState;
       }
       lastLoadSource = "default";
-      return defaultState();
+      return defaultEnvelope();
     } catch (error) {
       var fallback = readEmbeddedState();
       lastLoadSource = fallback ? "embedded" : "default";
-      return fallback ? sanitizeState(fallback) : defaultState();
+      var fallbackState = fallback ? sanitizeEnvelope(fallback) : defaultEnvelope();
+      migrateLegacyApiKeys(fallbackState.stories);
+      return fallbackState;
     }
   }
 
-  function saveState(state) {
+  function loadState() {
+    return activeStory(loadEnvelope());
+  }
+
+  function saveEnvelope(envelope) {
     var storage = getStorage();
     if (!storage) return;
-    storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    storage.setItem(STORAGE_KEY, JSON.stringify(sanitizeEnvelope(envelope)));
+  }
+
+  function saveState(state) {
+    saveEnvelope({
+      version: 2,
+      activeStoryId: state.id,
+      stories: [state]
+    });
   }
 
   function clearState() {
@@ -1725,26 +2147,49 @@ select:focus-visible,
     if (storage) storage.removeItem(STORAGE_KEY);
   }
 
-  function readApiKey(remember) {
+  function storyKeyName(base, storyId) {
+    return base + "_" + storyId;
+  }
+
+  function migrateLegacyApiKeys(stories) {
     try {
-      var sessionKey = root.sessionStorage ? root.sessionStorage.getItem(SESSION_KEY) : "";
-      var localKey = remember && root.localStorage ? root.localStorage.getItem(LOCAL_KEY) : "";
+      var sessionLegacy = root.sessionStorage ? root.sessionStorage.getItem(SESSION_KEY) : "";
+      var localLegacy = root.localStorage ? root.localStorage.getItem(LOCAL_KEY) : "";
+      if (!sessionLegacy && !localLegacy) return;
+      stories.forEach(function (story) {
+        if (sessionLegacy && root.sessionStorage && !root.sessionStorage.getItem(storyKeyName(SESSION_KEY, story.id))) {
+          root.sessionStorage.setItem(storyKeyName(SESSION_KEY, story.id), sessionLegacy);
+        }
+        if (localLegacy && story.api.rememberKey && root.localStorage &&
+            !root.localStorage.getItem(storyKeyName(LOCAL_KEY, story.id))) {
+          root.localStorage.setItem(storyKeyName(LOCAL_KEY, story.id), localLegacy);
+        }
+      });
+      if (root.sessionStorage) root.sessionStorage.removeItem(SESSION_KEY);
+      if (root.localStorage) root.localStorage.removeItem(LOCAL_KEY);
+    } catch (error) {}
+  }
+
+  function readApiKey(storyId, remember) {
+    try {
+      var sessionKey = root.sessionStorage ? root.sessionStorage.getItem(storyKeyName(SESSION_KEY, storyId)) : "";
+      var localKey = remember && root.localStorage ? root.localStorage.getItem(storyKeyName(LOCAL_KEY, storyId)) : "";
       return localKey || sessionKey || "";
     } catch (error) {
       return "";
     }
   }
 
-  function saveApiKey(key, remember) {
+  function saveApiKey(storyId, key, remember) {
     key = String(key || "").trim();
     try {
       if (root.sessionStorage) {
-        if (key) root.sessionStorage.setItem(SESSION_KEY, key);
-        else root.sessionStorage.removeItem(SESSION_KEY);
+        if (key) root.sessionStorage.setItem(storyKeyName(SESSION_KEY, storyId), key);
+        else root.sessionStorage.removeItem(storyKeyName(SESSION_KEY, storyId));
       }
       if (root.localStorage) {
-        if (remember && key) root.localStorage.setItem(LOCAL_KEY, key);
-        else root.localStorage.removeItem(LOCAL_KEY);
+        if (remember && key) root.localStorage.setItem(storyKeyName(LOCAL_KEY, storyId), key);
+        else root.localStorage.removeItem(storyKeyName(LOCAL_KEY, storyId));
       }
     } catch (error) {
       throw new Error("浏览器拒绝保存 API Key");
@@ -1755,6 +2200,7 @@ select:focus-visible,
     var checkpoint = {
       id: uid("checkpoint"),
       messageCount: state.messages.length,
+      messages: clone(state.messages),
       memory: clone(state.memory),
       castStates: state.cast.map(function (character) {
         return {
@@ -1773,7 +2219,9 @@ select:focus-visible,
 
   function restoreCheckpoint(state, checkpoint) {
     if (!state || !checkpoint) return false;
-    state.messages = state.messages.slice(0, Math.max(0, Number(checkpoint.messageCount) || 0));
+    state.messages = Array.isArray(checkpoint.messages)
+      ? clone(checkpoint.messages)
+      : state.messages.slice(0, Math.max(0, Number(checkpoint.messageCount) || 0));
     state.memory = clone(checkpoint.memory);
     if (Array.isArray(checkpoint.castStates)) {
       checkpoint.castStates.forEach(function (snapshot) {
@@ -1800,7 +2248,10 @@ select:focus-visible,
 
   YuC.State = {
     defaultState: defaultState,
+    defaultEnvelope: defaultEnvelope,
     sanitize: sanitizeState,
+    sanitizeEnvelope: sanitizeEnvelope,
+    activeStory: activeStory,
     makeCheckpoint: makeCheckpoint,
     restoreCheckpoint: restoreCheckpoint
   };
@@ -1808,11 +2259,158 @@ select:focus-visible,
   YuC.Store = {
     key: STORAGE_KEY,
     load: loadState,
+    loadEnvelope: loadEnvelope,
     save: saveState,
+    saveEnvelope: saveEnvelope,
     clear: clearState,
     source: function () { return lastLoadSource; },
     readApiKey: readApiKey,
     saveApiKey: saveApiKey
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+
+  var STYLE_PRESETS = {
+    cinematic: {
+      name: "电影分镜",
+      description: "短句、镜头感，动作和对白交替推进。",
+      sample: "门被推开一条缝。光从她肩后切进来。他抬眼，没动。\n“还有事？”",
+      prompt: "采用电影分镜式叙事：短句为主，先写可观察的动作与画面，再落对白；用停顿、视线和空间变化推进，不堆砌形容词。"
+    },
+    restrained: {
+      name: "克制留白",
+      description: "少解释情绪，用动作和停顿留下余味。",
+      sample: "他看了她很久，最后只把杯子往前推了推。\n“凉了。”",
+      prompt: "采用克制留白式写法：不直接概括情绪，不连续解释动机；通过动作、停顿、视线和简短对白让读者自行感受。"
+    },
+    classical: {
+      name: "古风叙事",
+      description: "凝练雅致，有古典意象，但不写成难懂文言。",
+      sample: "檐下风急，灯影一晃。沈砚收伞，指节停在袖口，半晌才道：“你来迟了。”她没有答，只听远处更鼓沉进雨里。",
+      prompt: "采用古风叙事：语言凝练雅致，可化用风声、灯影、衣袂、更鼓等古典意象；保持现代读者可读，不堆砌生僻典故，不把旁白写成纯文言。"
+    },
+    realistic: {
+      name: "生活写实",
+      description: "自然口语和生活细节，情绪藏在日常反应里。",
+      sample: "她把外卖袋放到桌角，塑料袋还滴着水。\n“路上堵车。”\n他嗯了一声，去厨房拿了只碗。",
+      prompt: "采用生活写实风格：对白自然口语化，描写具体可感的日常动作和物件；避免华丽排比与空泛抒情，让人物像真实的人。"
+    },
+    atmospheric: {
+      name: "细腻氛围",
+      description: "重视声音、光线、气味和环境，但保持剧情节奏。",
+      sample: "雨气从窗缝渗进来，带着旧木头和潮土的味道。钟摆一下一下，把屋里衬得更静。",
+      prompt: "采用细腻氛围写法：适度调动声音、光线、气味、温度和触感，让环境参与情绪；每段只保留最有作用的感官细节，不遮盖对白和动作。"
+    },
+    custom: {
+      name: "自定义",
+      description: "用自己的文字规定叙事口吻。",
+      sample: "在这里写下你希望旁白采用的句式、节奏和描写偏好。",
+      prompt: ""
+    }
+  };
+
+  var DETAIL_LABELS = {
+    action: "动作",
+    expression: "表情与微表情",
+    psychology: "心理活动",
+    environment: "环境氛围",
+    dialogue: "人物对白"
+  };
+
+  var DETAIL_LEVELS = {
+    concise: {
+      name: "精简",
+      prompt: "描写从简，优先推进对白和关键动作，避免铺陈。"
+    },
+    balanced: {
+      name: "适中",
+      prompt: "动作、对白和细节保持平衡，只写对当前剧情有作用的描写。"
+    },
+    rich: {
+      name: "细腻",
+      prompt: "可以写得更细，但每个细节都要服务人物或氛围，不重复已知信息。"
+    }
+  };
+
+  var TEMPERATURE_PRESETS = [
+    { value: 0.5, name: "稳定", description: "更贴合设定，变化少，适合严谨剧情。" },
+    { value: 0.8, name: "均衡", description: "稳定与变化兼顾，适合大多数日常对戏。" },
+    { value: 1.0, name: "创意", description: "表达更丰富、走向更多样，偶尔会有惊喜。" },
+    { value: 1.2, name: "大胆", description: "变化最大，也更容易跑偏或重复设定。" }
+  ];
+
+  var DEFAULT_DETAILS = {
+    action: true,
+    expression: true,
+    psychology: true,
+    environment: true,
+    dialogue: true
+  };
+
+  function defaultStyle() {
+    return {
+      preset: "cinematic",
+      custom: "",
+      detailLevel: "balanced",
+      details: Object.assign({}, DEFAULT_DETAILS)
+    };
+  }
+
+  function sanitizeStyle(value) {
+    var base = defaultStyle();
+    var source = value && typeof value === "object" ? value : {};
+    base.preset = STYLE_PRESETS[source.preset] ? source.preset : "cinematic";
+    base.custom = String(source.custom || "").slice(0, 3000);
+    base.detailLevel = DETAIL_LEVELS[source.detailLevel] ? source.detailLevel : "balanced";
+    var details = source.details && typeof source.details === "object" ? source.details : {};
+    Object.keys(DEFAULT_DETAILS).forEach(function (key) {
+      base.details[key] = details[key] !== false;
+    });
+    return base;
+  }
+
+  function promptForStyle(style) {
+    var value = sanitizeStyle(style);
+    var parts = [];
+    if (value.preset === "custom") {
+      if (value.custom) parts.push("文风要求：" + value.custom);
+    } else {
+      parts.push(STYLE_PRESETS[value.preset].prompt);
+    }
+    var level = DETAIL_LEVELS[value.detailLevel];
+    if (level) parts.push(level.prompt);
+    var enabled = Object.keys(DETAIL_LABELS).filter(function (key) {
+      return value.details[key];
+    });
+    if (enabled.length) {
+      parts.push("本次可用描写：" + enabled.map(function (key) {
+        return DETAIL_LABELS[key];
+      }).join("、") + "。不需要每段都全部出现，按剧情选择。");
+    }
+    var disabled = Object.keys(DETAIL_LABELS).filter(function (key) {
+      return !value.details[key];
+    });
+    if (disabled.length) {
+      parts.push("不要主动加入：" + disabled.map(function (key) {
+        return DETAIL_LABELS[key];
+      }).join("、") + "。");
+    }
+    return parts.join("\n");
+  }
+
+  YuC.Styles = {
+    presets: STYLE_PRESETS,
+    detailLabels: DETAIL_LABELS,
+    detailLevels: DETAIL_LEVELS,
+    temperaturePresets: TEMPERATURE_PRESETS,
+    defaultStyle: defaultStyle,
+    sanitizeStyle: sanitizeStyle,
+    promptForStyle: promptForStyle
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 
@@ -1879,19 +2477,23 @@ select:focus-visible,
 
     var createdAt = Date.now();
     var key = ENTRY_PREFIX + createdAt;
+    var envelope = YuC.State.sanitizeEnvelope(state);
+    var active = YuC.State.activeStory(envelope);
     var entry = {
       key: key,
       createdAt: createdAt,
       reason: String(reason || "自动备份"),
-      title: state.story && state.story.title || "未命名故事",
-      messageCount: Array.isArray(state.messages) ? state.messages.length : 0,
+      title: active.story && active.story.title || "未命名故事",
+      messageCount: envelope.stories.reduce(function (total, story) {
+        return total + story.messages.length;
+      }, 0),
       fingerprint: hash
     };
     var payload = JSON.stringify({
       format: "yuc-auto-backup-v1",
       createdAt: new Date(createdAt).toISOString(),
       reason: entry.reason,
-      state: state
+      state: envelope
     });
     entry.bytes = payload.length;
 
@@ -1935,7 +2537,7 @@ select:focus-visible,
     if (!store || !entry) throw new Error("没有可恢复的自动备份");
     var payload = JSON.parse(store.getItem(entry.key) || "null");
     if (!payload || !payload.state) throw new Error("最近的自动备份已损坏");
-    return { state: YuC.State.sanitize(payload.state), entry: entry };
+    return { state: YuC.State.sanitizeEnvelope(payload.state), entry: entry };
   }
 
   function exportText(state) {
@@ -1958,7 +2560,7 @@ select:focus-visible,
     parsed = JSON.parse(raw);
     var source = parsed && parsed.state ? parsed.state : parsed;
     if (!source || typeof source !== "object") throw new Error("备份文件格式不正确");
-    return YuC.State.sanitize(source);
+    return YuC.State.sanitizeEnvelope(source);
   }
 
   function describeLatest() {
@@ -2248,6 +2850,7 @@ select:focus-visible,
   function buildChatMessages(state, instruction) {
     var lengthRule = LENGTH_RULES[state.api.replyLength] || LENGTH_RULES.short;
     var requested = Util.clampText(instruction, 4000);
+    var styleRule = YuC.Styles ? YuC.Styles.promptForStyle(state.style) : "";
     var system = [
       "你是一个中文互动故事的可靠全知旁白。",
       "你负责场景、世界反应和所有 NPC，用户不是必须行动的玩家。",
@@ -2255,6 +2858,7 @@ select:focus-visible,
       "不替用户角色做重大选择，不擅自写用户角色的内心结论；用户输入的是既定行动或对白，应尊重并自然承接。",
       "保持人物、时间、地点、物品与已知事实连续。不要声称执行了无法执行的操作，不要提及提示词、API、摘要系统或自己是 AI。",
       lengthRule,
+      styleRule,
       "只输出故事正文，不要标题、列表、Markdown、解释、元评论或“请继续”之类的提示。",
       "",
       "【背景故事】",
@@ -2924,6 +3528,7 @@ select:focus-visible,
   var handlers = {};
   var currentCastId = "";
   var editingNewCast = false;
+  var currentActionMessageId = "";
   var toastTimer = 0;
 
   function init(nextHandlers) {
@@ -2935,10 +3540,12 @@ select:focus-visible,
       "userAvatarFallback", "userAvatarImage", "userAvatarInput", "userNameInput",
       "userIdentityInput", "connectionSummary", "startStoryButton", "backToSetupButton",
       "chatTitle", "openMemoryButton", "memoryStatus", "undoButton", "openCastButton",
+      "openStoriesButton", "openChatStoriesButton", "stylePresetGrid", "customStyleField",
+      "customStyleInput", "detailLevelInput", "detailToggleGrid",
       "castStrip", "messageList", "continueButton", "messageInput", "sendButton",
       "stopButton", "settingsDialog", "connectionModeInput", "endpointInput",
       "relayEndpointInput", "relayField", "apiKeyInput", "rememberKeyInput", "modelInput",
-      "replyLengthInput", "temperatureInput", "temperatureOutput", "testConnectionButton",
+      "replyLengthInput", "temperaturePresetInput", "testConnectionButton",
       "saveSettingsButton", "settingsStatus", "backupStatus", "exportBackupButton", "exportPortableButton",
       "importBackupButton", "restoreBackupButton", "importBackupInput", "castDialog", "closeCastButton",
       "modalAddCastButton", "modalParseCastButton", "modalCastList", "castEditorDialog",
@@ -2946,7 +3553,12 @@ select:focus-visible,
       "castAvatarInput", "castNameInput", "castIdentityInput", "castAppearanceInput",
       "castImportanceInput", "castStateInput", "deleteCastButton", "saveCastButton",
       "memoryDialog", "closeMemoryButton", "memorySummaryText", "memoryWorldText",
-      "memoryRelationsText", "memoryThreadsText", "toast"
+      "memoryRelationsText", "memoryThreadsText", "storiesDialog", "closeStoriesButton",
+      "newStoryButton", "storyList", "messageActionDialog", "closeMessageActionButton",
+      "messageActionPreview", "messageActionInstruction", "regenerateFromMessageButton",
+      "generateVariantsButton", "editMessageButton", "editMessageDialog",
+      "closeEditMessageButton", "editMessageText", "saveEditedMessageButton",
+      "variantsDialog", "closeVariantsButton", "variantsStatus", "variantList", "toast"
     ].forEach(function (id) {
       els[id] = byId(id);
     });
@@ -2999,6 +3611,9 @@ select:focus-visible,
     els.openSettingsButton.addEventListener("click", function () {
       if (handlers.onOpenSettings) handlers.onOpenSettings();
     });
+    els.openStoriesButton.addEventListener("click", function () {
+      if (handlers.onOpenStories) handlers.onOpenStories();
+    });
     els.saveSettingsButton.addEventListener("click", function () {
       if (handlers.onSaveSettings) handlers.onSaveSettings(readSettingsForm());
     });
@@ -3007,9 +3622,6 @@ select:focus-visible,
     });
     els.connectionModeInput.addEventListener("change", function () {
       els.relayField.classList.toggle("relay-required", els.connectionModeInput.value === "relay");
-    });
-    els.temperatureInput.addEventListener("input", function () {
-      els.temperatureOutput.textContent = Number(els.temperatureInput.value).toFixed(1);
     });
     els.exportBackupButton.addEventListener("click", function () {
       if (handlers.onExportBackup) handlers.onExportBackup();
@@ -3058,6 +3670,9 @@ select:focus-visible,
     els.openCastButton.addEventListener("click", function () {
       openDialog(els.castDialog);
     });
+    els.openChatStoriesButton.addEventListener("click", function () {
+      if (handlers.onOpenStories) handlers.onOpenStories();
+    });
     els.closeCastButton.addEventListener("click", function () {
       closeDialog(els.castDialog);
     });
@@ -3086,6 +3701,63 @@ select:focus-visible,
       if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
         event.preventDefault();
         if (handlers.onSend) handlers.onSend(els.messageInput.value);
+      }
+    });
+    els.messageList.addEventListener("click", function (event) {
+      var row = event.target.closest(".message.assistant");
+      if (!row || event.target.closest("button,a,input,textarea")) return;
+      if (handlers.onOpenMessageAction) handlers.onOpenMessageAction(row.getAttribute("data-message-id"));
+    });
+
+    els.stylePresetGrid.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-style-preset]");
+      if (button && handlers.onStylePreset) handlers.onStylePreset(button.getAttribute("data-style-preset"));
+    });
+    els.customStyleInput.addEventListener("input", function () {
+      if (handlers.onCustomStyle) handlers.onCustomStyle(els.customStyleInput.value);
+    });
+    els.detailLevelInput.addEventListener("change", function () {
+      if (handlers.onDetailLevel) handlers.onDetailLevel(els.detailLevelInput.value);
+    });
+    els.detailToggleGrid.addEventListener("change", function (event) {
+      var input = event.target.closest("input[data-detail-key]");
+      if (input && handlers.onDetailToggle) {
+        handlers.onDetailToggle(input.getAttribute("data-detail-key"), input.checked);
+      }
+    });
+    els.closeStoriesButton.addEventListener("click", function () { closeDialog(els.storiesDialog); });
+    els.newStoryButton.addEventListener("click", function () {
+      if (handlers.onNewStory) handlers.onNewStory();
+    });
+    els.storyList.addEventListener("click", function (event) {
+      var deleteButton = event.target.closest("[data-delete-story]");
+      if (deleteButton) {
+        event.stopPropagation();
+        if (handlers.onDeleteStory) handlers.onDeleteStory(deleteButton.getAttribute("data-delete-story"));
+        return;
+      }
+      var card = event.target.closest("[data-story-id]");
+      if (card && handlers.onSelectStory) handlers.onSelectStory(card.getAttribute("data-story-id"));
+    });
+    els.closeMessageActionButton.addEventListener("click", function () { closeDialog(els.messageActionDialog); });
+    els.regenerateFromMessageButton.addEventListener("click", function () {
+      if (handlers.onRegenerateMessage) handlers.onRegenerateMessage(els.messageActionInstruction.value);
+    });
+    els.generateVariantsButton.addEventListener("click", function () {
+      if (handlers.onGenerateVariants) handlers.onGenerateVariants(els.messageActionInstruction.value);
+    });
+    els.editMessageButton.addEventListener("click", function () {
+      if (handlers.onEditMessage) handlers.onEditMessage();
+    });
+    els.closeEditMessageButton.addEventListener("click", function () { closeDialog(els.editMessageDialog); });
+    els.saveEditedMessageButton.addEventListener("click", function () {
+      if (handlers.onSaveEditedMessage) handlers.onSaveEditedMessage(els.editMessageText.value);
+    });
+    els.closeVariantsButton.addEventListener("click", function () { closeDialog(els.variantsDialog); });
+    els.variantList.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-variant-index]");
+      if (button && handlers.onChooseVariant) {
+        handlers.onChooseVariant(Number(button.getAttribute("data-variant-index")));
       }
     });
 
@@ -3122,7 +3794,8 @@ select:focus-visible,
       );
     });
 
-    [els.settingsDialog, els.castDialog, els.castEditorDialog, els.memoryDialog].forEach(function (dialog) {
+    [els.settingsDialog, els.castDialog, els.castEditorDialog, els.memoryDialog,
+      els.storiesDialog, els.messageActionDialog, els.editMessageDialog, els.variantsDialog].forEach(function (dialog) {
       if (!dialog) return;
       dialog.addEventListener("click", function (event) {
         if (event.target === dialog) closeDialog(dialog);
@@ -3196,6 +3869,7 @@ select:focus-visible,
     els.backgroundCount.textContent = state.story.background.length + " / 60000 字";
     setPickerAvatar(els.userAvatarPicker, els.userAvatarImage, els.userAvatarFallback, state.user.avatar, state.user.name || "你");
     renderCast(state.cast);
+    renderStyleSettings(state.style);
 
     if (viewState && viewState.parseError) {
       els.parseState.textContent = viewState.parseError;
@@ -3222,6 +3896,43 @@ select:focus-visible,
       els.connectionSummary.classList.remove("ready");
       els.connectionSummary.textContent = "还没有填写 API Key。解析人物和开始演出前需要先完成连接设置。";
     }
+  }
+
+  function renderStyleSettings(style) {
+    var value = YuC.Styles.sanitizeStyle(style);
+    els.stylePresetGrid.replaceChildren();
+    Object.keys(YuC.Styles.presets).forEach(function (key) {
+      var preset = YuC.Styles.presets[key];
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "style-card" + (value.preset === key ? " selected" : "");
+      button.setAttribute("data-style-preset", key);
+      var title = document.createElement("strong");
+      title.textContent = preset.name;
+      var description = document.createElement("small");
+      description.textContent = preset.description;
+      var sample = document.createElement("span");
+      sample.className = "style-sample";
+      sample.textContent = preset.sample;
+      button.append(title, description, sample);
+      els.stylePresetGrid.appendChild(button);
+    });
+    els.customStyleField.hidden = value.preset !== "custom";
+    setValue(els.customStyleInput, value.custom);
+    setValue(els.detailLevelInput, value.detailLevel);
+    els.detailToggleGrid.replaceChildren();
+    Object.keys(YuC.Styles.detailLabels).forEach(function (key) {
+      var label = document.createElement("label");
+      label.className = "detail-toggle";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = !!value.details[key];
+      input.setAttribute("data-detail-key", key);
+      var text = document.createElement("span");
+      text.textContent = YuC.Styles.detailLabels[key];
+      label.append(input, text);
+      els.detailToggleGrid.appendChild(label);
+    });
   }
 
   function showView(name) {
@@ -3423,8 +4134,12 @@ select:focus-visible,
     els.rememberKeyInput.checked = !!state.api.rememberKey;
     setValue(els.modelInput, state.api.model);
     setValue(els.replyLengthInput, state.api.replyLength);
-    setValue(els.temperatureInput, state.api.temperature);
-    els.temperatureOutput.textContent = Number(state.api.temperature).toFixed(1);
+    var nearest = 0.8;
+    var distances = YuC.Styles.temperaturePresets.map(function (item) {
+      return { value: String(item.value), distance: Math.abs(item.value - Number(state.api.temperature)) };
+    }).sort(function (a, b) { return a.distance - b.distance; });
+    if (distances[0]) nearest = distances[0].value;
+    setValue(els.temperaturePresetInput, nearest);
     els.settingsStatus.textContent = "";
     els.settingsStatus.classList.remove("error");
     refreshBackupStatus();
@@ -3438,7 +4153,7 @@ select:focus-visible,
         endpoint: els.endpointInput.value.trim(),
         relayEndpoint: els.relayEndpointInput.value.trim(),
         model: els.modelInput.value.trim(),
-        temperature: Number(els.temperatureInput.value),
+        temperature: Number(els.temperaturePresetInput.value),
         replyLength: els.replyLengthInput.value,
         rememberKey: !!els.rememberKeyInput.checked
       },
@@ -3499,6 +4214,102 @@ select:focus-visible,
     els.continueButton.disabled = !enabled;
   }
 
+  function renderStoryList(stories, activeId) {
+    els.storyList.replaceChildren();
+    (stories || []).slice().sort(function (a, b) {
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    }).forEach(function (story) {
+      var card = document.createElement("div");
+      card.className = "story-card" + (story.id === activeId ? " active" : "");
+      var select = document.createElement("button");
+      select.type = "button";
+      select.className = "story-main";
+      select.setAttribute("data-story-id", story.id);
+      var copy = document.createElement("span");
+      var title = document.createElement("span");
+      title.className = "story-card-title";
+      title.textContent = Util.deriveTitle(story.story.background, story.story.title);
+      var meta = document.createElement("span");
+      meta.className = "story-card-meta";
+      var date = story.updatedAt ? new Date(story.updatedAt).toLocaleString("zh-CN", { hour12: false }) : "尚未开始";
+      meta.textContent = story.messages.length + " 条消息 · " + story.cast.length + " 名人物 · " + date;
+      copy.append(title, meta);
+      select.appendChild(copy);
+      card.appendChild(select);
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "story-delete";
+      remove.setAttribute("data-delete-story", story.id);
+      remove.setAttribute("aria-label", "删除这个故事");
+      remove.textContent = "删";
+      card.appendChild(remove);
+      els.storyList.appendChild(card);
+    });
+  }
+
+  function openStories(stories, activeId) {
+    renderStoryList(stories, activeId);
+    openDialog(els.storiesDialog);
+  }
+
+  function openMessageAction(message) {
+    currentActionMessageId = message.id;
+    els.messageActionPreview.textContent = message.content || "";
+    els.messageActionInstruction.value = message.instruction || "";
+    openDialog(els.messageActionDialog);
+  }
+
+  function getActionMessageId() {
+    return currentActionMessageId;
+  }
+
+  function openEditMessage(message) {
+    currentActionMessageId = message.id;
+    els.editMessageText.value = message.content || "";
+    closeDialog(els.messageActionDialog);
+    openDialog(els.editMessageDialog);
+  }
+
+  function showVariantsLoading() {
+    els.variantList.replaceChildren();
+    els.variantsStatus.textContent = "准备生成候选…";
+    els.variantsStatus.classList.remove("error");
+    openDialog(els.variantsDialog);
+  }
+
+  function setVariantsStatus(text, isError) {
+    els.variantsStatus.textContent = text || "";
+    els.variantsStatus.classList.toggle("error", !!isError);
+  }
+
+  function renderVariants(variants) {
+    var currentVariants = Array.isArray(variants) ? variants : [];
+    els.variantList.replaceChildren();
+    currentVariants.forEach(function (text, index) {
+      var card = document.createElement("article");
+      card.className = "variant-card";
+      var body = document.createElement("p");
+      body.className = "variant-card-text";
+      body.textContent = text;
+      var choose = document.createElement("button");
+      choose.type = "button";
+      choose.className = "accent-button";
+      choose.setAttribute("data-variant-index", String(index));
+      choose.textContent = "选这个版本";
+      card.append(body, choose);
+      els.variantList.appendChild(card);
+    });
+    setVariantsStatus("已生成 " + currentVariants.length + " 个版本。选择一个后会替换当前段落，并删除它后面的剧情。");
+  }
+
+  function closeMessageAction() {
+    closeDialog(els.messageActionDialog);
+  }
+
+  function closeVariants() {
+    closeDialog(els.variantsDialog);
+  }
+
   YuC.UI = {
     els: els,
     init: init,
@@ -3521,6 +4332,16 @@ select:focus-visible,
     closeCastEditor: closeCastEditor,
     setParseState: setParseState,
     setContinueEnabled: setContinueEnabled,
+    openStories: openStories,
+    renderStoryList: renderStoryList,
+    openMessageAction: openMessageAction,
+    getActionMessageId: getActionMessageId,
+    openEditMessage: openEditMessage,
+    showVariantsLoading: showVariantsLoading,
+    setVariantsStatus: setVariantsStatus,
+    renderVariants: renderVariants,
+    closeMessageAction: closeMessageAction,
+    closeVariants: closeVariants,
     closeDialog: closeDialog,
     setPickerAvatar: setPickerAvatar,
     autoGrow: autoGrow
@@ -3533,10 +4354,13 @@ select:focus-visible,
 
   var YuC = root.YuC;
   var Util = YuC.Util;
-  var state = YuC.Store.load();
+  var envelope = YuC.Store.loadEnvelope();
+  var stories = envelope.stories;
+  var activeStoryId = envelope.activeStoryId;
+  var state = activeStory();
   var viewState = {
     view: (state.story.startedAt || state.messages.length) ? "chat" : "setup",
-    apiKey: YuC.Store.readApiKey(state.api.rememberKey),
+    apiKey: YuC.Store.readApiKey(state.id, state.api.rememberKey),
     busy: false,
     parsing: false,
     memoryBusy: false,
@@ -3546,12 +4370,38 @@ select:focus-visible,
     forceBottom: true,
     abortController: null,
     stopping: false,
-    saveTimer: 0
+    saveTimer: 0,
+    actionMessageId: ""
   };
+
+  function activeStory() {
+    return stories.find(function (story) {
+      return story.id === activeStoryId;
+    }) || stories[0];
+  }
+
+  function syncActiveStory() {
+    var index = stories.findIndex(function (story) {
+      return story.id === state.id;
+    });
+    if (index >= 0) stories[index] = state;
+    else stories.push(state);
+    activeStoryId = state.id;
+  }
+
+  function currentEnvelope() {
+    syncActiveStory();
+    return {
+      version: 2,
+      activeStoryId: activeStoryId,
+      stories: stories
+    };
+  }
 
   function saveNow() {
     try {
-      YuC.Store.save(state);
+      state.updatedAt = Date.now();
+      YuC.Store.saveEnvelope(currentEnvelope());
     } catch (error) {
       YuC.UI.toast("保存失败，可能是本地存储空间不足");
     }
@@ -3564,7 +4414,7 @@ select:focus-visible,
 
   function backupNow(reason) {
     try {
-      var result = YuC.Backup.auto(state, reason);
+      var result = YuC.Backup.auto(currentEnvelope(), reason);
       if (result.error && !result.skipped) console.warn(result.error);
       YuC.UI.refreshBackupStatus();
       return result;
@@ -3637,6 +4487,23 @@ select:focus-visible,
         saveNow();
         render(false);
       },
+      onStylePreset: function (preset) {
+        state.style.preset = preset;
+        saveNow();
+        render(false);
+      },
+      onCustomStyle: function (value) {
+        state.style.custom = Util.clampText(value, 3000);
+        saveSoon();
+      },
+      onDetailLevel: function (value) {
+        state.style.detailLevel = value;
+        saveSoon();
+      },
+      onDetailToggle: function (key, checked) {
+        state.style.details[key] = !!checked;
+        saveSoon();
+      },
       onOpenSettings: function () {
         YuC.UI.openSettings(state, viewState.apiKey);
       },
@@ -3646,6 +4513,10 @@ select:focus-visible,
       onExportPortable: exportPortable,
       onImportBackup: importBackup,
       onRestoreBackup: restoreBackup,
+      onOpenStories: openStories,
+      onNewStory: newStory,
+      onSelectStory: selectStory,
+      onDeleteStory: deleteStory,
       onStartStory: startStory,
       onParseCast: parseCast,
       onOpenCastItem: function (id) {
@@ -3669,8 +4540,271 @@ select:focus-visible,
         sendUserMessage(text);
       },
       onStop: stopGeneration,
-      onUndo: undoLastSegment
+      onUndo: undoLastSegment,
+      onOpenMessageAction: openMessageAction,
+      onRegenerateMessage: regenerateFromAction,
+      onGenerateVariants: generateVariantsFromAction,
+      onEditMessage: editMessageFromAction,
+      onSaveEditedMessage: saveEditedMessage,
+      onChooseVariant: chooseVariant
     });
+  }
+
+  function openStories() {
+    saveNow();
+    YuC.UI.openStories(stories, activeStoryId);
+  }
+
+  function syncAppState() {
+    if (YuC.App) YuC.App.state = state;
+  }
+
+  function switchToStory(id) {
+    saveNow();
+    var next = stories.find(function (story) { return story.id === id; });
+    if (!next) return;
+    activeStoryId = next.id;
+    state = next;
+    viewState.apiKey = YuC.Store.readApiKey(state.id, state.api.rememberKey);
+    viewState.view = (state.story.startedAt || state.messages.length) ? "chat" : "setup";
+    viewState.memoryStatus = "";
+    YuC.UI.closeDialog(YuC.UI.els.storiesDialog);
+    YuC.UI.showView(viewState.view);
+    render(true);
+    syncAppState();
+  }
+
+  function newStory() {
+    saveNow();
+    backupNow("新建故事前");
+    var fresh = YuC.State.defaultState();
+    fresh.api = YuC.Util.clone(state.api);
+    fresh.style = YuC.Util.clone(state.style);
+    stories.unshift(fresh);
+    state = fresh;
+    activeStoryId = fresh.id;
+    viewState.apiKey = "";
+    YuC.Store.saveApiKey(fresh.id, "", fresh.api.rememberKey);
+    viewState.view = "setup";
+    viewState.parseError = "";
+    viewState.parseMessage = "";
+    YuC.UI.closeDialog(YuC.UI.els.storiesDialog);
+    YuC.UI.showView("setup");
+    saveNow();
+    render(false);
+    syncAppState();
+    YuC.UI.toast("已创建新故事，接口设置为独立副本");
+  }
+
+  function selectStory(id) {
+    switchToStory(id);
+  }
+
+  function deleteStory(id) {
+    var target = stories.find(function (story) { return story.id === id; });
+    if (!target) return;
+    if (stories.length <= 1) {
+      YuC.UI.toast("至少保留一个故事");
+      return;
+    }
+    var title = YuC.Util.deriveTitle(target.story.background, target.story.title);
+    if (!root.confirm("删除故事“" + title + "”及其全部记录？当前记录会先自动备份。")) return;
+    backupNow("删除故事前");
+    var wasActive = target.id === activeStoryId;
+    stories = stories.filter(function (story) { return story.id !== id; });
+    if (wasActive) {
+      state = stories[0];
+      activeStoryId = state.id;
+      viewState.view = (state.story.startedAt || state.messages.length) ? "chat" : "setup";
+    }
+    saveNow();
+    backupNow("删除故事");
+    YuC.UI.openStories(stories, activeStoryId);
+    if (wasActive) {
+      YuC.UI.showView(viewState.view);
+      render(true);
+      syncAppState();
+    }
+    YuC.UI.toast("故事已删除");
+  }
+
+  function findMessage(id) {
+    return state.messages.find(function (message) {
+      return message.id === id;
+    });
+  }
+
+  function openMessageAction(id) {
+    if (viewState.busy) return;
+    var message = findMessage(id);
+    if (!message || message.role !== "assistant") return;
+    viewState.actionMessageId = id;
+    var viewMessage = YuC.Util.clone(message);
+    var index = messageIndex(id);
+    for (var cursor = index - 1; cursor >= 0; cursor -= 1) {
+      if (state.messages[cursor].role === "user" && state.messages[cursor].instruction) {
+        viewMessage.instruction = state.messages[cursor].instruction;
+        break;
+      }
+    }
+    YuC.UI.openMessageAction(viewMessage);
+  }
+
+  function memoryCheckpointForIndex(index) {
+    for (var indexAt = state.checkpoints.length - 1; indexAt >= 0; indexAt -= 1) {
+      if (Number(state.checkpoints[indexAt].messageCount) === index) {
+        return state.checkpoints[indexAt];
+      }
+    }
+    return null;
+  }
+
+  function prepareTruncation(index) {
+    var priorMemory = memoryCheckpointForIndex(index);
+    YuC.State.makeCheckpoint(state);
+    if (priorMemory) {
+      YuC.State.restoreCheckpoint(state, priorMemory);
+    } else {
+      state.messages = state.messages.slice(0, index);
+      state.memory.summary = "";
+      state.memory.worldState = "";
+      state.memory.relationships = "";
+      state.memory.openThreads = "";
+      state.memory.summaryCount = 0;
+      state.memory.turnsSinceSummary = 0;
+      state.memory.lastSummarizedMessageCount = index;
+      state.memory.lastError = "";
+      state.cast.forEach(function (character) {
+        character.currentState = "";
+      });
+    }
+  }
+
+  function messageIndex(id) {
+    return state.messages.findIndex(function (message) {
+      return message.id === id;
+    });
+  }
+
+  function regenerateFromAction(instruction) {
+    if (viewState.busy || !requireApi()) return;
+    var index = messageIndex(viewState.actionMessageId);
+    if (index < 0) return;
+    YuC.UI.closeMessageAction();
+    prepareTruncation(index);
+    saveNow();
+    render(true);
+    beginGeneration(Util.clampText(instruction, 4000), { skipCheckpoint: true });
+  }
+
+  function replyMaxTokens() {
+    return ({ short: 220, medium: 460, long: 950, epic: 1600 })[state.api.replyLength] || 220;
+  }
+
+  async function generateVariantsFromAction(instruction) {
+    if (viewState.busy || !requireApi()) return;
+    var index = messageIndex(viewState.actionMessageId);
+    if (index < 0) return;
+    YuC.UI.closeMessageAction();
+    YuC.UI.showVariantsLoading();
+    viewState.busy = true;
+    viewState.abortController = new AbortController();
+    YuC.UI.setBusy(true);
+    var variants = [];
+    var errors = [];
+    try {
+      var candidateState = YuC.Util.clone(state);
+      candidateState.messages = state.messages.slice(0, index);
+      var memory = memoryCheckpointForIndex(index);
+      if (memory) candidateState.memory = YuC.Util.clone(memory.memory);
+      else {
+        candidateState.memory.summary = "";
+        candidateState.memory.worldState = "";
+        candidateState.memory.relationships = "";
+        candidateState.memory.openThreads = "";
+      }
+      for (var variantIndex = 1; variantIndex <= 3; variantIndex += 1) {
+        YuC.UI.setVariantsStatus("正在生成第 " + variantIndex + " / 3 个版本…");
+        var extra = [
+          instruction || "",
+          "这是独立的候选版本 " + variantIndex + "。请给出一个合理但与其他候选不同的推进方式，保持人物和已发生事实一致。"
+        ].filter(Boolean).join("\n");
+        try {
+          var text = await YuC.Api.requestText({
+            api: state.api,
+            key: viewState.apiKey,
+            messages: YuC.Prompt.buildChatMessages(candidateState, extra),
+            temperature: Math.min(1.4, Number(state.api.temperature) + 0.05 * (variantIndex - 1)),
+            maxTokens: replyMaxTokens(),
+            signal: viewState.abortController.signal
+          });
+          if (text.trim()) variants.push(text.trim());
+        } catch (error) {
+          errors.push(YuC.Api.describeError(error));
+        }
+      }
+      if (!variants.length) throw new Error(errors[0] || "没有生成可用候选");
+      YuC.UI.renderVariants(variants);
+    } catch (error) {
+      YuC.UI.setVariantsStatus(YuC.Api.describeError(error), true);
+    } finally {
+      viewState.busy = false;
+      viewState.abortController = null;
+      YuC.UI.setBusy(false);
+      render(false);
+    }
+  }
+
+  function editMessageFromAction() {
+    var message = findMessage(viewState.actionMessageId);
+    if (!message) return;
+    YuC.UI.openEditMessage(message);
+  }
+
+  function saveEditedMessage(text) {
+    var content = Util.clampText(text, 12000);
+    if (!content) {
+      YuC.UI.toast("改写内容不能为空");
+      return;
+    }
+    var message = findMessage(viewState.actionMessageId);
+    if (!message) return;
+    YuC.State.makeCheckpoint(state);
+    message.content = content;
+    message.error = false;
+    message.complete = true;
+    message.ts = Date.now();
+    saveNow();
+    backupNow("手动改写");
+    YuC.UI.closeDialog(YuC.UI.els.editMessageDialog);
+    render(true);
+    YuC.UI.toast("旁白内容已替换，可撤销");
+  }
+
+  function chooseVariant(index) {
+    var variants = Array.from(YuC.UI.els.variantList.querySelectorAll(".variant-card-text")).map(function (node) {
+      return node.textContent;
+    });
+    var selected = variants[index];
+    if (!selected) return;
+    var messageIndexAt = messageIndex(viewState.actionMessageId);
+    if (messageIndexAt < 0) return;
+    var original = state.messages[messageIndexAt];
+    prepareTruncation(messageIndexAt);
+    state.messages.push({
+      id: original.id,
+      role: "assistant",
+      content: selected,
+      ts: Date.now(),
+      error: false,
+      stopped: false,
+      complete: true
+    });
+    saveNow();
+    backupNow("选择候选版本");
+    YuC.UI.closeVariants();
+    render(true);
+    YuC.UI.toast("已采用所选版本，可撤销");
   }
 
   function timestampForFile(date) {
@@ -3693,7 +4827,7 @@ select:focus-visible,
   }
 
   function exportBackup() {
-    downloadText("语C-备份-" + timestampForFile() + ".json", YuC.Backup.exportText(state));
+    downloadText("语C-备份-" + timestampForFile() + ".json", YuC.Backup.exportText(currentEnvelope()));
     YuC.UI.setSettingsStatus("备份文件已导出");
   }
 
@@ -3707,7 +4841,7 @@ select:focus-visible,
       var payload = JSON.stringify({
         format: "yuc-html-snapshot-v1",
         createdAt: new Date().toISOString(),
-        state: state
+        state: currentEnvelope()
       }).replace(/</g, "\\u003c");
       embedded.textContent = payload;
       var html = "<!doctype html>\n" + documentCopy.outerHTML;
@@ -3732,14 +4866,17 @@ select:focus-visible,
   }
 
   function applyRestoredState(restored) {
-    state = YuC.State.sanitize(restored);
+    envelope = YuC.State.sanitizeEnvelope(restored);
+    stories = envelope.stories;
+    activeStoryId = envelope.activeStoryId;
+    state = activeStory();
     YuC.App.state = state;
+    viewState.apiKey = YuC.Store.readApiKey(state.id, state.api.rememberKey);
     viewState.view = (state.story.startedAt || state.messages.length) ? "chat" : "setup";
     viewState.memoryStatus = "";
     viewState.parseMessage = "";
     viewState.parseError = "";
     saveNow();
-    YuC.Store.saveApiKey(viewState.apiKey, state.api.rememberKey);
     YuC.UI.closeSettings();
     YuC.UI.showView(viewState.view);
     render(true);
@@ -3800,7 +4937,7 @@ select:focus-visible,
     };
     viewState.apiKey = data.key;
     try {
-      YuC.Store.saveApiKey(data.key, api.rememberKey);
+      YuC.Store.saveApiKey(state.id, data.key, api.rememberKey);
     } catch (error) {
       YuC.UI.setSettingsStatus(error.message || String(error), true);
       return;
@@ -3911,11 +5048,11 @@ select:focus-visible,
     beginGeneration(instruction);
   }
 
-  async function beginGeneration(instruction) {
+  async function beginGeneration(instruction, options) {
     if (viewState.busy) return;
     if (!requireApi()) return;
 
-    YuC.State.makeCheckpoint(state);
+    if (!options || !options.skipCheckpoint) YuC.State.makeCheckpoint(state);
     var assistantMessage = {
       id: Util.uid("msg"),
       role: "assistant",
@@ -4087,7 +5224,9 @@ select:focus-visible,
     state: state,
     viewState: viewState,
     saveNow: saveNow,
-    render: render
+    render: render,
+    getEnvelope: currentEnvelope,
+    getStories: function () { return stories; }
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 
