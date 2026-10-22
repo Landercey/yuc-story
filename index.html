@@ -1,0 +1,4096 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4efe6">
+  <meta name="format-detection" content="telephone=no,email=no,address=no">
+  <title>语C · 背景故事</title>
+  <style>
+:root {
+  --paper: #f4efe6;
+  --paper-deep: #ebe3d7;
+  --paper-raised: #fbf8f2;
+  --ink: #292621;
+  --ink-soft: #4e4941;
+  --muted: #6f675d;
+  --line: #d8cec0;
+  --line-strong: #bdae9c;
+  --accent: #984c32;
+  --accent-dark: #743723;
+  --accent-soft: #ead8ce;
+  --danger: #9b3f35;
+  --danger-soft: #f0d9d4;
+  --shadow: 0 18px 50px rgba(61, 47, 34, .12);
+  --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, .7), transparent 32rem),
+    var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(152, 76, 50, .28);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.app-shell {
+  width: min(100%, 820px);
+  height: 100%;
+  margin: 0 auto;
+  background: rgba(244, 239, 230, .78);
+}
+
+.view {
+  width: 100%;
+  height: 100%;
+}
+
+.setup-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: calc(14px + env(safe-area-inset-top)) 22px 12px;
+  border-bottom: 1px solid rgba(189, 174, 156, .48);
+  background: rgba(244, 239, 230, .91);
+  backdrop-filter: blur(14px);
+}
+
+.setup-topbar {
+  justify-content: space-between;
+}
+
+.topbar h1,
+.section-heading h2,
+.modal-header h2,
+.intro h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+.topbar h1 {
+  font-size: 25px;
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.text-button,
+.quiet-button,
+.accent-button,
+.danger-button,
+.primary-button,
+.file-button,
+.icon-button,
+.continue-button,
+.send-button,
+.stop-button,
+.memory-button {
+  border: 0;
+  border-radius: 12px;
+  transition: background-color .18s ease, color .18s ease, transform .18s ease, opacity .18s ease;
+}
+
+.text-button {
+  min-height: 44px;
+  padding: 0 4px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.text-button:active,
+.quiet-button:active,
+.accent-button:active,
+.danger-button:active,
+.primary-button:active,
+.file-button:active,
+.icon-button:active {
+  transform: translateY(1px);
+}
+
+.setup-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 26px 22px 0;
+}
+
+.intro {
+  max-width: 620px;
+  margin: 0 auto 24px;
+  animation: rise .45s ease both;
+}
+
+.intro h2 {
+  font-size: clamp(27px, 6vw, 38px);
+  line-height: 1.28;
+}
+
+.intro p {
+  max-width: 560px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.section-card {
+  max-width: 680px;
+  margin: 0 auto 18px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(251, 248, 242, .88);
+  box-shadow: 0 5px 20px rgba(72, 56, 40, .035);
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.section-heading > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.section-heading h2 {
+  font-size: 21px;
+}
+
+.step-number {
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.optional-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-help {
+  margin: -5px 0 15px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.field {
+  display: block;
+  margin-top: 15px;
+}
+
+.field > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.field input,
+.field textarea,
+.field select,
+#messageInput {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, .9);
+  color: var(--ink);
+  outline: none;
+}
+
+.field input,
+.field select {
+  min-height: 46px;
+  padding: 10px 13px;
+}
+
+.field textarea {
+  min-height: 98px;
+  padding: 12px 13px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+#backgroundInput {
+  min-height: 235px;
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus,
+#messageInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(152, 76, 50, .09);
+}
+
+.field-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 20px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.file-button input,
+.avatar-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cast-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cast-preview.full {
+  grid-template-columns: 1fr;
+  margin-top: 16px;
+}
+
+.cast-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(244, 239, 230, .48);
+  text-align: left;
+}
+
+.cast-card:hover {
+  border-color: var(--line-strong);
+  background: var(--paper);
+}
+
+.cast-avatar,
+.mini-avatar,
+.message-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper-deep);
+  color: var(--accent-dark);
+  font-family: var(--serif);
+  font-weight: 650;
+}
+
+.cast-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
+.cast-avatar img,
+.mini-avatar img,
+.message-avatar img,
+.avatar-picker img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cast-copy {
+  min-width: 0;
+}
+
+.cast-name {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cast-role {
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-note {
+  padding: 18px 6px;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 14px;
+  text-align: center;
+}
+
+.parse-state {
+  min-height: 18px;
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar-picker {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+  border: 1px dashed var(--line-strong);
+  border-radius: 50%;
+  background: var(--paper-deep);
+  cursor: pointer;
+}
+
+.avatar-picker.small {
+  width: 64px;
+  height: 64px;
+}
+
+.avatar-fallback {
+  color: var(--accent-dark);
+  font-family: var(--serif);
+  font-size: 25px;
+}
+
+.profile-fields {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.profile-fields .field:first-child,
+.compact-field {
+  margin-top: 0;
+}
+
+.connection-summary {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 13px 15px;
+  border-left: 3px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.connection-summary.ready {
+  border-left-color: var(--accent);
+  color: var(--ink-soft);
+}
+
+.setup-spacer {
+  height: 110px;
+}
+
+.setup-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  padding: 14px 22px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--paper) 62%, rgba(244, 239, 230, 0));
+}
+
+.primary-button,
+.accent-button,
+.quiet-button,
+.danger-button {
+  min-height: 44px;
+  padding: 0 17px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.primary-button,
+.accent-button {
+  background: var(--accent);
+  color: #fffaf5;
+}
+
+.primary-button:hover,
+.accent-button:hover {
+  background: var(--accent-dark);
+}
+
+.accent-button.compact {
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+
+.quiet-button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.quiet-button:hover {
+  background: var(--paper-deep);
+}
+
+.danger-button {
+  border: 1px solid #d8b6af;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.primary-button:disabled,
+.accent-button:disabled,
+.quiet-button:disabled,
+.continue-button:disabled,
+.send-button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.start-button {
+  width: min(100%, 680px);
+  min-height: 52px;
+  font-size: 16px;
+}
+
+.chat-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-topbar {
+  gap: 8px;
+  min-height: 67px;
+  padding-right: 14px;
+  padding-left: 14px;
+}
+
+.chat-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.chat-heading h1 {
+  overflow: hidden;
+  font-size: 19px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-button {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 19px;
+}
+
+.icon-button:hover {
+  background: var(--paper-deep);
+}
+
+.chat-tools {
+  display: flex;
+  gap: 2px;
+}
+
+.memory-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.memory-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.memory-button.ready .memory-dot {
+  background: var(--accent);
+}
+
+.memory-button.busy .memory-dot {
+  animation: pulse 1s ease infinite;
+  background: var(--accent);
+}
+
+.cast-strip {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 9px 18px;
+  border-bottom: 1px solid rgba(189, 174, 156, .35);
+  scrollbar-width: none;
+}
+
+.cast-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.cast-chip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(251, 248, 242, .72);
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.mini-avatar {
+  width: 25px;
+  height: 25px;
+  font-size: 11px;
+}
+
+.message-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 22px 18px 28px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  max-width: 86%;
+  margin: 0 0 20px;
+  animation: message-in .2s ease both;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.message-content-wrap {
+  min-width: 0;
+}
+
+.message-label {
+  margin: 0 0 5px 2px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+
+.message.user .message-label {
+  margin-right: 2px;
+  text-align: right;
+}
+
+.message-bubble {
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 5px 17px 17px 17px;
+  background: rgba(251, 248, 242, .78);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.82;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.message.user .message-bubble {
+  border-color: #dfc6b8;
+  border-radius: 17px 5px 17px 17px;
+  background: var(--accent-soft);
+}
+
+.message-instruction {
+  margin: 6px 2px 0;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent-soft);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.message.error .message-bubble {
+  border-color: #d8b6af;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.message.streaming .message-bubble::after {
+  content: "";
+  display: inline-block;
+  width: .55em;
+  height: 1em;
+  margin-left: 3px;
+  border-right: 2px solid var(--accent);
+  vertical-align: -.12em;
+  animation: cursor 1s steps(2, end) infinite;
+}
+
+.chat-empty {
+  max-width: 420px;
+  margin: 12vh auto 0;
+  color: var(--muted);
+  font-family: var(--serif);
+  line-height: 1.9;
+  text-align: center;
+}
+
+.chat-empty strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-soft);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.composer {
+  flex: 0 0 auto;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: rgba(244, 239, 230, .96);
+  backdrop-filter: blur(14px);
+}
+
+.composer-note {
+  margin: 0 4px 7px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.composer-note strong {
+  color: var(--accent);
+}
+
+.composer-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.continue-button {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 62px;
+  height: 46px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.continue-button span:first-child {
+  font-size: 9px;
+}
+
+#messageInput {
+  flex: 1 1 auto;
+  min-height: 46px;
+  max-height: 130px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  background: rgba(255, 253, 248, .9);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.45;
+  resize: none;
+}
+
+.send-button,
+.stop-button {
+  flex: 0 0 auto;
+  min-width: 58px;
+  height: 46px;
+  padding: 0 13px;
+  color: #fffaf5;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.send-button {
+  background: var(--accent);
+}
+
+.stop-button {
+  background: var(--danger);
+}
+
+.modal {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  background: rgba(41, 38, 33, .42);
+}
+
+.modal[open] {
+  display: grid;
+  place-items: center;
+}
+
+.modal::backdrop {
+  background: rgba(41, 38, 33, .35);
+  backdrop-filter: blur(3px);
+}
+
+.modal-card {
+  width: min(100%, 620px);
+  max-height: min(88vh, 840px);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h2 {
+  font-size: 22px;
+}
+
+.modal-body {
+  max-height: calc(min(88vh, 840px) - 82px);
+  overflow-y: auto;
+  padding: 16px 20px calc(22px + env(safe-area-inset-bottom));
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.modal-actions.spread {
+  justify-content: space-between;
+}
+
+.modal-status {
+  min-height: 20px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.modal-status.error {
+  color: var(--danger);
+}
+
+.backup-panel {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(244, 239, 230, .5);
+}
+
+.backup-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backup-heading h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.backup-heading span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.backup-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.backup-actions .quiet-button {
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.check-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.fine-print {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.cast-editor-top {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cast-editor-top .field {
+  flex: 1 1 auto;
+}
+
+.memory-body section + section {
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+
+.memory-body h3 {
+  margin: 17px 0 7px;
+  color: var(--accent);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.memory-body p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  z-index: 1000;
+  max-width: min(84vw, 520px);
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 999px;
+  background: rgba(41, 38, 33, .95);
+  color: #fffaf5;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes cursor {
+  50% {
+    opacity: .2;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: .35;
+  }
+}
+
+@media (max-width: 620px) {
+  .setup-scroll {
+    padding: 20px 14px 0;
+  }
+
+  .topbar {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .section-card {
+    padding: 17px 15px;
+    border-radius: 17px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+  }
+
+  .heading-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heading-actions button {
+    min-height: 34px;
+  }
+
+  .cast-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-row {
+    align-items: flex-start;
+  }
+
+  .avatar-picker {
+    width: 64px;
+    height: 64px;
+  }
+
+  .quiet-button,
+  .accent-button,
+  .danger-button {
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+
+  .message-list {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .message {
+    max-width: 94%;
+  }
+
+  .backup-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .composer {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .continue-button {
+    min-width: 58px;
+    padding: 0 8px;
+  }
+
+  .send-button,
+  .stop-button {
+    min-width: 54px;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .chat-heading h1 {
+    font-size: 17px;
+  }
+
+  .continue-button span:last-child {
+    display: none;
+  }
+
+  .continue-button {
+    min-width: 46px;
+  }
+
+  .message-bubble {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section class="view setup-view" id="setupView">
+      <header class="topbar setup-topbar">
+        <div>
+          <p class="eyebrow">背景驱动的持续演出</p>
+          <h1>语C</h1>
+        </div>
+        <button class="text-button" id="openSettingsButton" type="button">连接设置</button>
+      </header>
+
+      <main class="setup-scroll">
+        <section class="intro">
+          <h2>让故事从一段背景开始</h2>
+          <p>粘贴世界观、人物关系或开场处境。你只需要提供舞台，旁白会接着往下演。</p>
+        </section>
+
+        <section class="section-card">
+          <div class="section-heading">
+            <div>
+              <span class="step-number">01</span>
+              <h2>背景故事</h2>
+            </div>
+            <label class="file-button">
+              导入 .md / .txt
+              <input id="backgroundFileInput" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown">
+            </label>
+          </div>
+          <label class="field">
+            <span>故事标题 <em>可选</em></span>
+            <input id="storyTitleInput" type="text" maxlength="60" placeholder="例如：雨夜之后">
+          </label>
+          <label class="field">
+            <span>世界与故事背景</span>
+            <textarea id="backgroundInput" rows="10" maxlength="60000" placeholder="写下世界规则、当前处境、人物关系、尚未发生的伏笔……"></textarea>
+          </label>
+          <div class="field-foot">
+            <span id="backgroundCount">0 / 60000 字</span>
+            <span id="backgroundFileStatus"></span>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-heading">
+            <div>
+              <span class="step-number">02</span>
+              <h2>故事人物</h2>
+            </div>
+            <div class="heading-actions">
+              <button class="quiet-button" id="addCastButton" type="button">手动添加</button>
+              <button class="accent-button compact" id="parseCastButton" type="button">解析人物</button>
+            </div>
+          </div>
+          <p class="section-help">从背景中提取最多 12 名主要人物，并生成占位头像。你的编辑不会被下一次解析覆盖。</p>
+          <div class="cast-preview" id="setupCastList"></div>
+          <div class="empty-note" id="setupCastEmpty">还没有人物。可以解析背景，也可以直接开始。</div>
+          <div class="parse-state" id="parseState" aria-live="polite"></div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-heading">
+            <div>
+              <span class="step-number">03</span>
+              <h2>你的身份</h2>
+            </div>
+            <span class="optional-label">可选</span>
+          </div>
+          <div class="profile-row">
+            <label class="avatar-picker" id="userAvatarPicker" tabindex="0" role="button" aria-label="上传你的头像">
+              <span class="avatar-fallback" id="userAvatarFallback">你</span>
+              <img id="userAvatarImage" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" hidden>
+              <input id="userAvatarInput" type="file" accept="image/png,image/jpeg,image/webp">
+            </label>
+            <div class="profile-fields">
+              <label class="field compact-field">
+                <span>称呼</span>
+                <input id="userNameInput" type="text" maxlength="30" placeholder="你">
+              </label>
+              <label class="field compact-field">
+                <span>身份或介入方式</span>
+                <input id="userIdentityInput" type="text" maxlength="160" placeholder="例如：路过的旅人">
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="connection-summary" id="connectionSummary"></section>
+        <div class="setup-spacer"></div>
+      </main>
+
+      <footer class="setup-footer">
+        <button class="primary-button start-button" id="startStoryButton" type="button">开始对戏</button>
+      </footer>
+    </section>
+
+    <section class="view chat-view" id="chatView" hidden>
+      <header class="topbar chat-topbar">
+        <button class="icon-button" id="backToSetupButton" type="button" aria-label="返回设置">←</button>
+        <div class="chat-heading">
+          <h1 id="chatTitle">未命名故事</h1>
+          <button class="memory-button" id="openMemoryButton" type="button" aria-label="查看剧情记忆">
+            <span class="memory-dot"></span>
+            <span id="memoryStatus">记忆待建立</span>
+          </button>
+        </div>
+        <div class="chat-tools">
+          <button class="icon-button" id="undoButton" type="button" aria-label="撤销最后一条消息" title="撤销最后一条消息">↶</button>
+          <button class="icon-button" id="openCastButton" type="button" aria-label="查看人物" title="查看人物">人</button>
+        </div>
+      </header>
+
+      <div class="cast-strip" id="castStrip" hidden></div>
+      <main class="message-list" id="messageList" aria-live="polite"></main>
+
+      <footer class="composer">
+        <div class="composer-note">在输入中用 <strong>#</strong> 分隔剧情和本次生成要求</div>
+        <div class="composer-inner">
+          <button class="continue-button" id="continueButton" type="button">
+            <span aria-hidden="true">▶</span>
+            <span>继续</span>
+          </button>
+          <textarea id="messageInput" rows="1" placeholder="对白或行动 # 本次要求，例如：我推门进去 # 重点写顾青的反应"></textarea>
+          <button class="send-button" id="sendButton" type="button">发送</button>
+          <button class="stop-button" id="stopButton" type="button" hidden>停止</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <dialog class="modal settings-modal" id="settingsDialog">
+    <form method="dialog" class="modal-card" id="settingsForm">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">OpenAI 兼容接口</p>
+          <h2>连接设置</h2>
+        </div>
+        <button class="icon-button" value="cancel" type="submit" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>连接方式</span>
+          <select id="connectionModeInput">
+            <option value="direct">直连</option>
+            <option value="relay">中转</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>API 地址</span>
+          <input id="endpointInput" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.deepseek.com/v1">
+        </label>
+        <label class="field" id="relayField">
+          <span>中转地址 <em>直连失败时也可自动尝试</em></span>
+          <input id="relayEndpointInput" type="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/v1">
+        </label>
+        <label class="field">
+          <span>API Key</span>
+          <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="sk-...">
+        </label>
+        <label class="check-row">
+          <input id="rememberKeyInput" type="checkbox">
+          <span>在这台设备上记住 Key</span>
+        </label>
+        <p class="fine-print">Key 不会写进 HTML。未勾选时只保留在本次浏览器会话中。</p>
+        <label class="field">
+          <span>模型</span>
+          <input id="modelInput" type="text" autocomplete="off" spellcheck="false" placeholder="deepseek-chat">
+        </label>
+        <label class="field">
+          <span>每次演出长度</span>
+          <select id="replyLengthInput">
+            <option value="short">很短 · 20–50 字</option>
+            <option value="medium">中篇 · 80–150 字</option>
+            <option value="long">较长 · 250–350 字</option>
+            <option value="epic">长段 · 450–600 字</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>温度 <output id="temperatureOutput">1.0</output></span>
+          <input id="temperatureInput" type="range" min="0" max="1.5" step="0.1" value="1">
+        </label>
+        <section class="backup-panel">
+          <div class="backup-heading">
+            <h3>记录备份</h3>
+            <span id="backupStatus">尚无自动备份</span>
+          </div>
+          <p class="fine-print">每新增一条消息自动保留一份本机快照，最多 5 份；快照不包含 API Key。</p>
+          <div class="backup-actions">
+            <button class="quiet-button" id="exportBackupButton" type="button">导出 JSON</button>
+            <button class="quiet-button" id="exportPortableButton" type="button">导出完整 HTML</button>
+            <button class="quiet-button" id="importBackupButton" type="button">导入备份</button>
+            <button class="quiet-button" id="restoreBackupButton" type="button">恢复最近快照</button>
+          </div>
+          <input id="importBackupInput" type="file" accept=".json,.html,application/json,text/html" hidden>
+        </section>
+        <div class="modal-actions">
+          <button class="quiet-button" id="testConnectionButton" type="button">测试连接</button>
+          <button class="accent-button" id="saveSettingsButton" type="button">保存设置</button>
+        </div>
+        <p class="modal-status" id="settingsStatus" aria-live="polite"></p>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="castDialog">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">故事人物</p>
+          <h2>人物列表</h2>
+        </div>
+        <button class="icon-button" id="closeCastButton" type="button" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="modal-actions spread">
+          <button class="quiet-button" id="modalAddCastButton" type="button">添加人物</button>
+          <button class="accent-button" id="modalParseCastButton" type="button">从背景解析</button>
+        </div>
+        <div class="cast-preview full" id="modalCastList"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="castEditorDialog">
+    <form method="dialog" class="modal-card" id="castEditorForm">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">人物资料</p>
+          <h2 id="castEditorTitle">编辑人物</h2>
+        </div>
+        <button class="icon-button" value="cancel" type="submit" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="cast-editor-top">
+          <label class="avatar-picker small" id="castAvatarPicker" tabindex="0" role="button" aria-label="上传人物头像">
+            <span class="avatar-fallback" id="castAvatarFallback">人</span>
+            <img id="castAvatarImage" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" hidden>
+            <input id="castAvatarInput" type="file" accept="image/png,image/jpeg,image/webp">
+          </label>
+          <label class="field compact-field">
+            <span>姓名</span>
+            <input id="castNameInput" type="text" maxlength="30" required>
+          </label>
+        </div>
+        <label class="field">
+          <span>身份</span>
+          <input id="castIdentityInput" type="text" maxlength="160">
+        </label>
+        <label class="field">
+          <span>外貌</span>
+          <textarea id="castAppearanceInput" rows="3" maxlength="600"></textarea>
+        </label>
+        <label class="field">
+          <span>重要性</span>
+          <select id="castImportanceInput">
+            <option value="main">主要</option>
+            <option value="supporting">次要</option>
+            <option value="background">背景人物</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>当前状态 <em>会随剧情更新</em></span>
+          <textarea id="castStateInput" rows="3" maxlength="600"></textarea>
+        </label>
+        <div class="modal-actions spread">
+          <button class="danger-button" id="deleteCastButton" type="button">删除</button>
+          <button class="accent-button" id="saveCastButton" type="button">保存人物</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="memoryDialog">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">长期剧情记忆</p>
+          <h2>当前故事状态</h2>
+        </div>
+        <button class="icon-button" id="closeMemoryButton" type="button" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body memory-body">
+        <section>
+          <h3>剧情摘要</h3>
+          <p id="memorySummaryText">还没有建立摘要。</p>
+        </section>
+        <section>
+          <h3>世界状态</h3>
+          <p id="memoryWorldText">—</p>
+        </section>
+        <section>
+          <h3>人物关系</h3>
+          <p id="memoryRelationsText">—</p>
+        </section>
+        <section>
+          <h3>未完成线索</h3>
+          <p id="memoryThreadsText">—</p>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="application/json" id="embeddedBackup">null</script>
+  <script>
+/* 本文件为单文件交付构建。界面与交互基于 ai-tavern 的实现思路重新组织；仅供个人本地使用。 */
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var STORAGE_KEY = "yuc_story_v1";
+  var SESSION_KEY = "yuc_api_key_session";
+  var LOCAL_KEY = "yuc_api_key_local";
+  var MAX_CHECKPOINTS = 10;
+
+  function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+
+  function uid(prefix) {
+    return (prefix || "id") + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function clampText(value, max) {
+    return String(value == null ? "" : value).trim().slice(0, max || 100000);
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function initial(value) {
+    var text = clampText(value, 30);
+    return text ? Array.from(text)[0] : "人";
+  }
+
+  function deriveTitle(background, explicitTitle) {
+    var title = clampText(explicitTitle, 60);
+    if (title) return title;
+    var text = clampText(background, 100000);
+    if (!text) return "未命名故事";
+    var first = text.split(/\n+/).map(function (line) {
+      return line.replace(/^#+\s*/, "").trim();
+    }).find(Boolean) || "未命名故事";
+    return first.slice(0, 28);
+  }
+
+  function defaultState() {
+    return {
+      version: 1,
+      story: {
+        title: "",
+        background: "",
+        createdAt: 0,
+        startedAt: 0
+      },
+      user: {
+        name: "",
+        identity: "",
+        avatar: ""
+      },
+      cast: [],
+      api: {
+        mode: "direct",
+        endpoint: "https://api.deepseek.com/v1",
+        relayEndpoint: "",
+        model: "deepseek-chat",
+        temperature: 1,
+        replyLength: "short",
+        rememberKey: false
+      },
+      messages: [],
+      memory: {
+        summary: "",
+        worldState: "",
+        relationships: "",
+        openThreads: "",
+        summaryCount: 0,
+        turnsSinceSummary: 0,
+        lastSummarizedMessageCount: 0,
+        lastError: ""
+      },
+      checkpoints: []
+    };
+  }
+
+  function sanitizeCastItem(item) {
+    if (!item || typeof item !== "object") return null;
+    var name = clampText(item.name, 30);
+    if (!name) return null;
+    return {
+      id: clampText(item.id, 80) || uid("cast"),
+      name: name,
+      identity: clampText(item.identity, 160),
+      appearance: clampText(item.appearance, 600),
+      importance: ["main", "supporting", "background"].indexOf(item.importance) >= 0
+        ? item.importance
+        : "supporting",
+      currentState: clampText(item.currentState || item.initialState, 600),
+      avatar: clampText(item.avatar, 1200000),
+      locked: !!item.locked
+    };
+  }
+
+  function sanitizeMessage(item) {
+    if (!item || typeof item !== "object") return null;
+    var role = item.role === "user" ? "user" : "assistant";
+    var content = String(item.content == null ? "" : item.content);
+    return {
+      id: clampText(item.id, 80) || uid("msg"),
+      role: role,
+      content: content,
+      instruction: clampText(item.instruction, 4000),
+      ts: Number(item.ts) || Date.now(),
+      error: !!item.error,
+      stopped: !!item.stopped,
+      complete: item.complete !== false
+    };
+  }
+
+  function sanitizeState(raw) {
+    var base = defaultState();
+    var source = raw && typeof raw === "object" ? raw : {};
+    var story = source.story && typeof source.story === "object" ? source.story : {};
+    var user = source.user && typeof source.user === "object" ? source.user : {};
+    var api = source.api && typeof source.api === "object" ? source.api : {};
+    var memory = source.memory && typeof source.memory === "object" ? source.memory : {};
+
+    base.story.title = clampText(story.title, 60);
+    base.story.background = String(story.background || "").slice(0, 60000);
+    base.story.createdAt = Number(story.createdAt) || 0;
+    base.story.startedAt = Number(story.startedAt) || 0;
+
+    base.user.name = clampText(user.name, 30);
+    base.user.identity = clampText(user.identity, 160);
+    base.user.avatar = clampText(user.avatar, 1200000);
+
+    base.api.mode = api.mode === "relay" ? "relay" : "direct";
+    base.api.endpoint = clampText(api.endpoint, 1000) || base.api.endpoint;
+    base.api.relayEndpoint = clampText(api.relayEndpoint, 1000);
+    base.api.model = clampText(api.model, 120) || base.api.model;
+    base.api.temperature = Math.max(0, Math.min(1.5, Number(api.temperature) || 1));
+    base.api.replyLength = ["short", "medium", "long", "epic"].indexOf(api.replyLength) >= 0
+      ? api.replyLength
+      : "short";
+    base.api.rememberKey = !!api.rememberKey;
+
+    base.cast = Array.isArray(source.cast)
+      ? source.cast.map(sanitizeCastItem).filter(Boolean).slice(0, 50)
+      : [];
+    base.messages = Array.isArray(source.messages)
+      ? source.messages.map(sanitizeMessage).filter(Boolean)
+      : [];
+
+    base.memory.summary = clampText(memory.summary, 20000);
+    base.memory.worldState = clampText(memory.worldState, 8000);
+    base.memory.relationships = clampText(memory.relationships, 8000);
+    base.memory.openThreads = clampText(memory.openThreads, 8000);
+    base.memory.summaryCount = Math.max(0, Number(memory.summaryCount) || 0);
+    base.memory.turnsSinceSummary = Math.max(0, Number(memory.turnsSinceSummary) || 0);
+    base.memory.lastSummarizedMessageCount = Math.max(0, Number(memory.lastSummarizedMessageCount) || 0);
+    base.memory.lastError = clampText(memory.lastError, 1000);
+
+    base.checkpoints = Array.isArray(source.checkpoints)
+      ? source.checkpoints.filter(function (checkpoint) {
+          return checkpoint && typeof checkpoint === "object";
+        }).slice(-MAX_CHECKPOINTS)
+      : [];
+    return base;
+  }
+
+  function getStorage() {
+    try {
+      return root.localStorage || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  var lastLoadSource = "default";
+
+  function readEmbeddedState() {
+    try {
+      var element = root.document && root.document.getElementById("embeddedBackup");
+      if (!element) return null;
+      var text = String(element.textContent || "").trim();
+      if (!text || text === "null") return null;
+      var payload = JSON.parse(text);
+      return payload && payload.state ? payload.state : payload;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function loadState() {
+    var storage = getStorage();
+    if (!storage) {
+      var embeddedOnly = readEmbeddedState();
+      lastLoadSource = embeddedOnly ? "embedded" : "default";
+      return embeddedOnly ? sanitizeState(embeddedOnly) : defaultState();
+    }
+    try {
+      var raw = storage.getItem(STORAGE_KEY);
+      if (raw) {
+        lastLoadSource = "local";
+        return sanitizeState(JSON.parse(raw));
+      }
+      var embedded = readEmbeddedState();
+      if (embedded) {
+        lastLoadSource = "embedded";
+        return sanitizeState(embedded);
+      }
+      lastLoadSource = "default";
+      return defaultState();
+    } catch (error) {
+      var fallback = readEmbeddedState();
+      lastLoadSource = fallback ? "embedded" : "default";
+      return fallback ? sanitizeState(fallback) : defaultState();
+    }
+  }
+
+  function saveState(state) {
+    var storage = getStorage();
+    if (!storage) return;
+    storage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function clearState() {
+    var storage = getStorage();
+    if (storage) storage.removeItem(STORAGE_KEY);
+  }
+
+  function readApiKey(remember) {
+    try {
+      var sessionKey = root.sessionStorage ? root.sessionStorage.getItem(SESSION_KEY) : "";
+      var localKey = remember && root.localStorage ? root.localStorage.getItem(LOCAL_KEY) : "";
+      return localKey || sessionKey || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function saveApiKey(key, remember) {
+    key = String(key || "").trim();
+    try {
+      if (root.sessionStorage) {
+        if (key) root.sessionStorage.setItem(SESSION_KEY, key);
+        else root.sessionStorage.removeItem(SESSION_KEY);
+      }
+      if (root.localStorage) {
+        if (remember && key) root.localStorage.setItem(LOCAL_KEY, key);
+        else root.localStorage.removeItem(LOCAL_KEY);
+      }
+    } catch (error) {
+      throw new Error("浏览器拒绝保存 API Key");
+    }
+  }
+
+  function makeCheckpoint(state) {
+    var checkpoint = {
+      id: uid("checkpoint"),
+      messageCount: state.messages.length,
+      memory: clone(state.memory),
+      castStates: state.cast.map(function (character) {
+        return {
+          id: character.id,
+          name: character.name,
+          currentState: character.currentState
+        };
+      })
+    };
+    state.checkpoints.push(checkpoint);
+    if (state.checkpoints.length > MAX_CHECKPOINTS) {
+      state.checkpoints.splice(0, state.checkpoints.length - MAX_CHECKPOINTS);
+    }
+    return checkpoint;
+  }
+
+  function restoreCheckpoint(state, checkpoint) {
+    if (!state || !checkpoint) return false;
+    state.messages = state.messages.slice(0, Math.max(0, Number(checkpoint.messageCount) || 0));
+    state.memory = clone(checkpoint.memory);
+    if (Array.isArray(checkpoint.castStates)) {
+      checkpoint.castStates.forEach(function (snapshot) {
+        var character = state.cast.find(function (item) {
+          return item.id === snapshot.id || item.name === snapshot.name;
+        });
+        if (character) character.currentState = snapshot.currentState || "";
+      });
+    } else if (Array.isArray(checkpoint.cast)) {
+      state.cast = clone(checkpoint.cast);
+    }
+    return true;
+  }
+
+  YuC.Util = {
+    clone: clone,
+    uid: uid,
+    clampText: clampText,
+    escapeHtml: escapeHtml,
+    initial: initial,
+    deriveTitle: deriveTitle,
+    MAX_CHECKPOINTS: MAX_CHECKPOINTS
+  };
+
+  YuC.State = {
+    defaultState: defaultState,
+    sanitize: sanitizeState,
+    makeCheckpoint: makeCheckpoint,
+    restoreCheckpoint: restoreCheckpoint
+  };
+
+  YuC.Store = {
+    key: STORAGE_KEY,
+    load: loadState,
+    save: saveState,
+    clear: clearState,
+    source: function () { return lastLoadSource; },
+    readApiKey: readApiKey,
+    saveApiKey: saveApiKey
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var INDEX_KEY = "yuc_auto_backup_index_v1";
+  var ENTRY_PREFIX = "yuc_auto_backup_v1_";
+  var MAX_AUTO_BACKUPS = 5;
+  var lastError = "";
+
+  function storage() {
+    try {
+      return root.localStorage || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function fingerprint(text) {
+    var hash = 2166136261;
+    for (var index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16) + ":" + text.length;
+  }
+
+  function readIndex() {
+    var store = storage();
+    if (!store) return [];
+    try {
+      var list = JSON.parse(store.getItem(INDEX_KEY) || "[]");
+      return Array.isArray(list) ? list.filter(function (item) {
+        return item && item.key && store.getItem(item.key);
+      }) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeIndex(list) {
+    var store = storage();
+    if (!store) return;
+    store.setItem(INDEX_KEY, JSON.stringify(list));
+  }
+
+  function removeEntry(entry) {
+    var store = storage();
+    if (store && entry && entry.key) store.removeItem(entry.key);
+  }
+
+  function auto(state, reason) {
+    var store = storage();
+    if (!store || !state) return { created: false, skipped: true, error: "浏览器不支持本地备份" };
+    var stateText = JSON.stringify(state);
+    var hash = fingerprint(stateText);
+    var list = readIndex();
+    if (list[0] && list[0].fingerprint === hash) {
+      return { created: false, skipped: true, error: "", entry: list[0] };
+    }
+
+    var createdAt = Date.now();
+    var key = ENTRY_PREFIX + createdAt;
+    var entry = {
+      key: key,
+      createdAt: createdAt,
+      reason: String(reason || "自动备份"),
+      title: state.story && state.story.title || "未命名故事",
+      messageCount: Array.isArray(state.messages) ? state.messages.length : 0,
+      fingerprint: hash
+    };
+    var payload = JSON.stringify({
+      format: "yuc-auto-backup-v1",
+      createdAt: new Date(createdAt).toISOString(),
+      reason: entry.reason,
+      state: state
+    });
+    entry.bytes = payload.length;
+
+    while (true) {
+      try {
+        store.setItem(key, payload);
+        break;
+      } catch (error) {
+        if (!list.length) {
+          lastError = "自动备份失败：本地存储空间不足";
+          return { created: false, skipped: false, error: lastError };
+        }
+        removeEntry(list.pop());
+        try {
+          writeIndex(list);
+        } catch (indexError) {}
+      }
+    }
+
+    list.unshift(entry);
+    while (list.length > MAX_AUTO_BACKUPS) removeEntry(list.pop());
+    try {
+      writeIndex(list);
+    } catch (error) {
+      store.removeItem(key);
+      lastError = "自动备份失败：无法更新备份列表";
+      return { created: false, skipped: false, error: lastError };
+    }
+    lastError = "";
+    return { created: true, skipped: false, error: "", entry: entry };
+  }
+
+  function latest() {
+    var list = readIndex();
+    return list[0] || null;
+  }
+
+  function restoreLatest() {
+    var store = storage();
+    var entry = latest();
+    if (!store || !entry) throw new Error("没有可恢复的自动备份");
+    var payload = JSON.parse(store.getItem(entry.key) || "null");
+    if (!payload || !payload.state) throw new Error("最近的自动备份已损坏");
+    return { state: YuC.State.sanitize(payload.state), entry: entry };
+  }
+
+  function exportText(state) {
+    return JSON.stringify({
+      format: "yuc-manual-backup-v1",
+      createdAt: new Date().toISOString(),
+      state: state
+    }, null, 2);
+  }
+
+  function parseImport(text) {
+    var raw = String(text || "").trim();
+    var parsed;
+    if (/<!doctype\s+html|<html\b/i.test(raw)) {
+      var match = raw.match(/<script\b[^>]*\bid=["']embeddedBackup["'][^>]*>([\s\S]*?)<\/script>/i);
+      if (!match) throw new Error("这个 HTML 没有内嵌语C存档");
+      raw = match[1].trim();
+      if (!raw || raw === "null") throw new Error("这个 HTML 是普通程序版，没有嵌入记录");
+    }
+    parsed = JSON.parse(raw);
+    var source = parsed && parsed.state ? parsed.state : parsed;
+    if (!source || typeof source !== "object") throw new Error("备份文件格式不正确");
+    return YuC.State.sanitize(source);
+  }
+
+  function describeLatest() {
+    var entry = latest();
+    if (lastError) return lastError;
+    if (!entry) return "尚无自动备份";
+    return new Date(entry.createdAt).toLocaleString("zh-CN", { hour12: false }) +
+      " · " + entry.messageCount + " 条消息";
+  }
+
+  YuC.Backup = {
+    MAX_AUTO_BACKUPS: MAX_AUTO_BACKUPS,
+    auto: auto,
+    latest: latest,
+    restoreLatest: restoreLatest,
+    exportText: exportText,
+    parseImport: parseImport,
+    describeLatest: describeLatest,
+    list: readIndex
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var Util = YuC.Util;
+
+  function normalizeHeading(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[\s*_#:：]/g, "")
+      .trim();
+  }
+
+  function parseMarkdownCharacter(text) {
+    var labels = {
+      name: ["姓名", "名字", "角色名", "name"],
+      identity: ["身份", "定位", "identity", "role"],
+      appearance: ["外貌", "外形", "appearance"],
+      personality: ["性格", "personality"],
+      speechStyle: ["说话方式", "口癖", "语气", "speech"],
+      taboos: ["禁忌", "雷点", "taboos"],
+      opening: ["开场", "开场白", "opening"],
+      importance: ["重要性", "importance"],
+      currentState: ["状态", "当前状态", "state"]
+    };
+    var keyByHeading = {};
+    Object.keys(labels).forEach(function (key) {
+      labels[key].forEach(function (label) {
+        keyByHeading[normalizeHeading(label)] = key;
+      });
+    });
+
+    var result = {
+      name: "",
+      identity: "",
+      appearance: "",
+      personality: "",
+      speechStyle: "",
+      taboos: "",
+      opening: "",
+      importance: "supporting",
+      currentState: "",
+      notes: ""
+    };
+    var notes = [];
+    var currentKey = "";
+    var currentHeading = "";
+
+    String(text || "").split(/\r?\n/).forEach(function (rawLine) {
+      var line = rawLine.trim();
+      if (!line) {
+        if (currentKey) result[currentKey] += "\n";
+        return;
+      }
+      var headingMatch = line.match(/^#{1,6}\s*(.+?)\s*$/);
+      if (headingMatch) {
+        currentHeading = headingMatch[1].replace(/^[*_]+|[*_]+$/g, "").trim();
+        currentKey = keyByHeading[normalizeHeading(currentHeading)] || "";
+        if (!currentKey) notes.push(headingMatch[1]);
+        return;
+      }
+      var fieldMatch = line.match(/^[*_]*([^:*_]{1,20})[*_]*\s*[:：]\s*(.*)$/);
+      if (fieldMatch) {
+        var mapped = keyByHeading[normalizeHeading(fieldMatch[1])];
+        if (mapped) {
+          result[mapped] += (result[mapped] ? "\n" : "") + fieldMatch[2].trim();
+          currentKey = mapped;
+          return;
+        }
+      }
+      if (currentKey) {
+        result[currentKey] += (result[currentKey] && !result[currentKey].endsWith("\n") ? "\n" : "") + line;
+      } else {
+        notes.push(line);
+      }
+    });
+
+    if (!result.name && notes.length) result.name = notes.shift().slice(0, 30);
+    result.notes = notes.join("\n").trim();
+    result.name = Util.clampText(result.name, 30);
+    result.identity = Util.clampText(result.identity, 160);
+    result.appearance = Util.clampText(result.appearance, 600);
+    result.personality = Util.clampText(result.personality, 1200);
+    result.speechStyle = Util.clampText(result.speechStyle, 800);
+    result.taboos = Util.clampText(result.taboos, 800);
+    result.opening = Util.clampText(result.opening, 1800);
+    result.currentState = Util.clampText(result.currentState, 600);
+    result.notes = Util.clampText(result.notes, 3000);
+    return result;
+  }
+
+  function extractJsonValue(text) {
+    var source = String(text || "").trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "");
+    try {
+      return JSON.parse(source);
+    } catch (error) {
+      var objectStart = source.indexOf("{");
+      var objectEnd = source.lastIndexOf("}");
+      var arrayStart = source.indexOf("[");
+      var arrayEnd = source.lastIndexOf("]");
+      var start = -1;
+      var end = -1;
+      if (objectStart >= 0 && objectEnd > objectStart) {
+        start = objectStart;
+        end = objectEnd;
+      }
+      if (arrayStart >= 0 && arrayEnd > arrayStart && (start < 0 || arrayStart < start)) {
+        start = arrayStart;
+        end = arrayEnd;
+      }
+      if (start < 0 || end < 0) throw new Error("回复中没有可解析的 JSON");
+      return JSON.parse(source.slice(start, end + 1));
+    }
+  }
+
+  function normalizeImportance(value) {
+    var text = String(value || "").toLowerCase();
+    if (text === "main" || /主要|核心|主角/.test(text)) return "main";
+    if (text === "background" || /背景|群演/.test(text)) return "background";
+    return "supporting";
+  }
+
+  function parseCharacterExtraction(text) {
+    var value = extractJsonValue(text);
+    var source = Array.isArray(value) ? value : (value.characters || value.cast || []);
+    if (!Array.isArray(source)) throw new Error("人物解析结果缺少 characters 数组");
+    var seen = Object.create(null);
+    var cast = [];
+    source.forEach(function (item) {
+      if (!item || typeof item !== "object") return;
+      var name = Util.clampText(item.name || item.姓名, 30);
+      if (!name || seen[name]) return;
+      seen[name] = true;
+      cast.push({
+        id: Util.uid("cast"),
+        name: name,
+        identity: Util.clampText(item.identity || item.role || item.身份, 160),
+        appearance: Util.clampText(item.appearance || item.外貌, 600),
+        importance: normalizeImportance(item.importance || item.重要性),
+        currentState: Util.clampText(item.currentState || item.initialState || item.当前状态, 600),
+        avatar: "",
+        locked: false
+      });
+    });
+    return cast.slice(0, 12);
+  }
+
+  function mergeCast(existing, incoming) {
+    existing = Array.isArray(existing) ? existing : [];
+    incoming = Array.isArray(incoming) ? incoming : [];
+    var byName = Object.create(null);
+    existing.forEach(function (character) {
+      byName[character.name.trim().toLowerCase()] = character;
+    });
+    var merged = existing.slice();
+    incoming.forEach(function (character) {
+      var key = character.name.trim().toLowerCase();
+      var old = byName[key];
+      if (old) {
+        if (!old.identity) old.identity = character.identity;
+        if (!old.appearance) old.appearance = character.appearance;
+        if (old.importance === "supporting" && character.importance !== "supporting") {
+          old.importance = character.importance;
+        }
+        if (!old.currentState) old.currentState = character.currentState;
+        return;
+      }
+      byName[key] = character;
+      merged.push(character);
+    });
+    return merged.slice(0, 30);
+  }
+
+  function readFileAsText(file, maxBytes) {
+    return new Promise(function (resolve, reject) {
+      if (!file) {
+        reject(new Error("没有选择文件"));
+        return;
+      }
+      if (file.size > (maxBytes || 2 * 1024 * 1024)) {
+        reject(new Error("文件过大，请控制在 2 MB 以内"));
+        return;
+      }
+      var lower = String(file.name || "").toLowerCase();
+      if (!/\.(md|markdown|txt)$/.test(lower)) {
+        reject(new Error("首版只支持 .md、.markdown 和 .txt 文件"));
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve(String(reader.result || ""));
+      };
+      reader.onerror = function () {
+        reject(new Error("读取文件失败"));
+      };
+      reader.readAsText(file, "utf-8");
+    });
+  }
+
+  YuC.Importer = {
+    parseMarkdownCharacter: parseMarkdownCharacter,
+    parseCharacterExtraction: parseCharacterExtraction,
+    extractJsonValue: extractJsonValue,
+    mergeCast: mergeCast,
+    readFileAsText: readFileAsText
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var Util = YuC.Util;
+
+  var LENGTH_RULES = {
+    short: "通常只写 20–50 个中文字符，人物对白与动作自然混排，不写成长段散文。",
+    medium: "通常写 80–150 个中文字符，可以包含一个动作变化和一两句对白。",
+    long: "通常写 250–350 个中文字符，允许展开环境、动作和对白，但要保持节奏。",
+    epic: "通常写 450–600 个中文字符，允许完整描写一个场景节拍；仍须保留下一步空间。"
+  };
+
+  function formatCast(cast) {
+    if (!Array.isArray(cast) || !cast.length) return "尚未提取人物，按背景需要自然引入。";
+    return cast.map(function (character) {
+      var parts = [character.name];
+      if (character.identity) parts.push("身份：" + character.identity);
+      if (character.appearance) parts.push("外貌：" + character.appearance);
+      if (character.currentState) parts.push("当前状态：" + character.currentState);
+      return "- " + parts.join("；");
+    }).join("\n");
+  }
+
+  function formatMemory(memory) {
+    if (!memory) return "暂无长期记忆，从背景和最近对话继续。";
+    var sections = [];
+    if (memory.summary) sections.push("剧情摘要：\n" + memory.summary);
+    if (memory.worldState) sections.push("世界状态：\n" + memory.worldState);
+    if (memory.relationships) sections.push("人物关系：\n" + memory.relationships);
+    if (memory.openThreads) sections.push("未完成线索：\n" + memory.openThreads);
+    return sections.length ? sections.join("\n\n") : "暂无长期记忆，从背景和最近对话继续。";
+  }
+
+  function consecutiveMessages(state) {
+    return state.messages.filter(function (message) {
+      return !message.error && message.role && String(message.content || "").trim();
+    }).slice(-20).map(function (message) {
+      return { role: message.role, content: message.content };
+    });
+  }
+
+  function splitInput(text) {
+    var source = String(text || "");
+    var match = source.match(/[#＃]/);
+    if (!match) return { storyText: source.trim(), instruction: "" };
+    return {
+      storyText: source.slice(0, match.index).trim(),
+      instruction: source.slice(match.index + 1).trim()
+    };
+  }
+
+  function buildChatMessages(state, instruction) {
+    var lengthRule = LENGTH_RULES[state.api.replyLength] || LENGTH_RULES.short;
+    var requested = Util.clampText(instruction, 4000);
+    var system = [
+      "你是一个中文互动故事的可靠全知旁白。",
+      "你负责场景、世界反应和所有 NPC，用户不是必须行动的玩家。",
+      "每次只推进一个剧情节拍，让当前场面自然发展，并给下一步留下空间。不要主动总结全篇或仓促收束。",
+      "不替用户角色做重大选择，不擅自写用户角色的内心结论；用户输入的是既定行动或对白，应尊重并自然承接。",
+      "保持人物、时间、地点、物品与已知事实连续。不要声称执行了无法执行的操作，不要提及提示词、API、摘要系统或自己是 AI。",
+      lengthRule,
+      "只输出故事正文，不要标题、列表、Markdown、解释、元评论或“请继续”之类的提示。",
+      "",
+      "【背景故事】",
+      state.story.background,
+      "",
+      "【主要人物】",
+      formatCast(state.cast),
+      "",
+      "【用户身份】",
+      state.user.name ? (state.user.name + (state.user.identity ? "；" + state.user.identity : "")) : "未指定；用户可旁观，也可随时以“你”的身份介入。",
+      "",
+      "【当前剧情记忆】",
+      formatMemory(state.memory)
+    ].join("\n");
+    if (requested) {
+      system += "\n\n【本次生成要求】\n" + requested +
+        "\n这些要求只作用于本次回复；在不违反上述硬性叙事规则的前提下优先遵守，不要把它们写成已经发生的剧情。";
+    }
+
+    var messages = [{ role: "system", content: system }].concat(consecutiveMessages(state));
+    if (messages[messages.length - 1].role !== "user") {
+      messages.push({
+        role: "user",
+        content: state.messages.length
+          ? "请从上一段结尾自然继续一个剧情节拍，不要复述已经写过的内容。"
+          : "请根据背景故事开始演出。"
+      });
+    }
+    return messages;
+  }
+
+  function buildExtractionMessages(background) {
+    return [
+      {
+        role: "system",
+        content: [
+          "你是中文故事编辑。请从背景中提取最多 12 名主要人物。",
+          "只输出一个 JSON 对象，不要代码块、解释或额外文字。",
+          '格式：{"characters":[{"name":"姓名","identity":"身份","appearance":"简短外貌","importance":"main|supporting|background","currentState":"开场时状态"}]}',
+          "姓名不得重复；背景没有明确外貌时可为空，不要凭空编造重要事实。"
+        ].join("\n")
+      },
+      { role: "user", content: "背景故事如下：\n\n" + String(background || "").slice(0, 60000) }
+    ];
+  }
+
+  function compactMessagesForSummary(messages) {
+    return messages.filter(function (message) {
+      return !message.error && String(message.content || "").trim();
+    }).map(function (message) {
+      return (message.role === "user" ? "用户" : "旁白") + "：" + message.content;
+    }).join("\n\n");
+  }
+
+  function buildSummaryMessages(state, rebuild) {
+    var messages = rebuild
+      ? state.messages
+      : state.messages.slice(Math.max(0, state.memory.lastSummarizedMessageCount - 2));
+    var dialog = compactMessagesForSummary(messages).slice(-120000);
+    var previous = formatMemory(state.memory);
+
+    return [
+      {
+        role: "system",
+        content: [
+          "你是互动剧情的连续性编辑。请更新故事档案，只记录已经发生或已说明的事实。",
+          "只输出一个 JSON 对象，不要代码块、解释或额外文字。",
+          '格式：{"summary":"按时间顺序压缩的重要剧情","worldState":"地点、时间、环境和局势","relationships":"人物关系及变化","openThreads":"承诺、伏笔和未解决目标","characterUpdates":[{"name":"人物姓名","currentState":"此刻状态"}]}',
+          "保留人物、地点、关键物品、伤势、承诺、关系变化和未完成线索；禁止编造，不要写文风评价。",
+          rebuild ? "这是全量重建，请以原文对话为准核对并纠正旧摘要。" : "在旧档案基础上合并新内容，删除已经解决且不再重要的细枝末节。"
+        ].join("\n")
+      },
+      {
+        role: "user",
+        content: [
+          "【背景】",
+          state.story.background.slice(0, 60000),
+          "",
+          "【人物】",
+          formatCast(state.cast),
+          "",
+          "【旧档案】",
+          previous,
+          "",
+          "【需要整理的对话】",
+          dialog || "暂无对话，保留旧档案。"
+        ].join("\n")
+      }
+    ];
+  }
+
+  function asText(value, max) {
+    if (Array.isArray(value)) value = value.join("\n");
+    if (value && typeof value === "object") value = JSON.stringify(value);
+    return Util.clampText(value, max || 20000);
+  }
+
+  function parseSummaryResponse(text) {
+    var parsed = YuC.Importer.extractJsonValue(text);
+    if (Array.isArray(parsed) || !parsed || typeof parsed !== "object") {
+      throw new Error("摘要结果不是对象");
+    }
+    var summary = asText(parsed.summary || parsed.剧情摘要, 20000);
+    if (!summary) throw new Error("摘要缺少 summary 字段");
+    var updates = Array.isArray(parsed.characterUpdates) ? parsed.characterUpdates : [];
+    return {
+      summary: summary,
+      worldState: asText(parsed.worldState || parsed.世界状态, 8000),
+      relationships: asText(parsed.relationships || parsed.人物关系, 8000),
+      openThreads: asText(parsed.openThreads || parsed.未完成线索, 8000),
+      characterUpdates: updates.map(function (item) {
+        return {
+          name: Util.clampText(item && (item.name || item.姓名), 30),
+          currentState: Util.clampText(item && (item.currentState || item.当前状态), 600)
+        };
+      }).filter(function (item) {
+        return item.name && item.currentState;
+      })
+    };
+  }
+
+  function mergeCharacterUpdates(cast, updates) {
+    if (!Array.isArray(updates) || !updates.length) return;
+    var map = Object.create(null);
+    cast.forEach(function (character) {
+      map[character.name.trim().toLowerCase()] = character;
+    });
+    updates.forEach(function (update) {
+      var character = map[update.name.trim().toLowerCase()];
+      if (character) character.currentState = update.currentState;
+    });
+  }
+
+  YuC.Prompt = {
+    lengths: LENGTH_RULES,
+    splitInput: splitInput,
+    buildChatMessages: buildChatMessages,
+    buildExtractionMessages: buildExtractionMessages,
+    buildSummaryMessages: buildSummaryMessages,
+    parseSummaryResponse: parseSummaryResponse,
+    mergeCharacterUpdates: mergeCharacterUpdates
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var Util = YuC.Util;
+
+  var SUMMARY_EVERY = 8;
+  var REBUILD_EVERY = 3;
+
+  async function maybeSummarize(options) {
+    var state = options.state;
+    var key = options.key;
+    var signal = options.signal;
+    if (!state || state.memory.turnsSinceSummary < SUMMARY_EVERY) {
+      return { skipped: true, updated: false, error: "" };
+    }
+    if (!key) {
+      return { skipped: true, updated: false, error: "没有 API Key，暂时无法更新记忆" };
+    }
+
+    var nextCount = state.memory.summaryCount + 1;
+    var rebuild = nextCount % REBUILD_EVERY === 0;
+    if (options.onStatus) {
+      options.onStatus(rebuild ? "正在重建完整记忆…" : "正在整理剧情记忆…");
+    }
+
+    try {
+      var text = await YuC.Api.requestText({
+        api: state.api,
+        key: key,
+        messages: YuC.Prompt.buildSummaryMessages(state, rebuild),
+        temperature: 0.2,
+        maxTokens: 2200,
+        signal: signal
+      });
+      var parsed = YuC.Prompt.parseSummaryResponse(text);
+      state.memory.summary = parsed.summary;
+      state.memory.worldState = parsed.worldState;
+      state.memory.relationships = parsed.relationships;
+      state.memory.openThreads = parsed.openThreads;
+      state.memory.summaryCount = nextCount;
+      state.memory.turnsSinceSummary = 0;
+      state.memory.lastSummarizedMessageCount = state.messages.length;
+      state.memory.lastError = "";
+      YuC.Prompt.mergeCharacterUpdates(state.cast, parsed.characterUpdates);
+      if (options.onStatus) options.onStatus(rebuild ? "完整记忆已重建" : "剧情记忆已更新");
+      return {
+        skipped: false,
+        updated: true,
+        rebuild: rebuild,
+        error: "",
+        characterUpdates: parsed.characterUpdates.length
+      };
+    } catch (error) {
+      var message = YuC.Api.describeError(error);
+      state.memory.lastError = Util.clampText(message, 1000);
+      if (options.onStatus) options.onStatus("记忆更新失败，将稍后重试");
+      return {
+        skipped: false,
+        updated: false,
+        rebuild: rebuild,
+        error: message
+      };
+    }
+  }
+
+  YuC.Memory = {
+    SUMMARY_EVERY: SUMMARY_EVERY,
+    REBUILD_EVERY: REBUILD_EVERY,
+    maybeSummarize: maybeSummarize
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var Util = YuC.Util;
+
+  function ApiError(message, options) {
+    this.name = "ApiError";
+    this.message = message;
+    this.status = options && options.status || 0;
+    this.type = options && options.type || "unknown";
+    this.endpoint = options && options.endpoint || "";
+    this.partial = options && options.partial || "";
+    this.detail = options && options.detail || "";
+    if (Error.captureStackTrace) Error.captureStackTrace(this, ApiError);
+  }
+  ApiError.prototype = Object.create(Error.prototype);
+  ApiError.prototype.constructor = ApiError;
+
+  function normalizeEndpoint(input) {
+    var url = String(input || "").trim();
+    if (!url) throw new Error("请填写 API 地址");
+    url = url.replace(/\/+$/, "");
+    if (/\/chat\/completions$/i.test(url)) return url;
+    return url + "/chat/completions";
+  }
+
+  function endpointCandidates(api) {
+    var list = [];
+    var direct = "";
+    var relay = "";
+    try {
+      direct = normalizeEndpoint(api.endpoint);
+    } catch (error) {}
+    try {
+      relay = api.relayEndpoint ? normalizeEndpoint(api.relayEndpoint) : "";
+    } catch (error) {}
+    if (api.mode === "relay") {
+      if (relay) list.push({ url: relay, kind: "relay" });
+      if (direct && direct !== relay) list.push({ url: direct, kind: "direct" });
+    } else {
+      if (direct) list.push({ url: direct, kind: "direct" });
+      if (relay && relay !== direct) list.push({ url: relay, kind: "relay" });
+    }
+    if (!list.length) throw new Error("没有可用的 API 地址");
+    return list;
+  }
+
+  function responseError(status, detail, endpoint) {
+    var short = String(detail || "").replace(/\s+/g, " ").slice(0, 300);
+    var message;
+    var type = "http";
+    if (status === 401 || status === 403) {
+      message = "API Key 无效或没有访问权限";
+      type = "auth";
+    } else if (status === 402) {
+      message = "账户余额不足";
+      type = "billing";
+    } else if (status === 429) {
+      message = "请求过于频繁或额度受限，稍后再试";
+      type = "rate";
+    } else if (status >= 500) {
+      message = "模型服务暂时异常（HTTP " + status + "）";
+      type = "server";
+    } else {
+      message = "接口请求失败（HTTP " + status + "）";
+    }
+    return new ApiError(message, { status: status, type: type, detail: short, endpoint: endpoint });
+  }
+
+  function networkError(error, endpoint, partial) {
+    var text = error && error.message ? error.message : String(error || "网络错误");
+    return new ApiError("浏览器无法连接接口。可能是网络或跨域限制，请尝试中转地址。", {
+      type: "network",
+      endpoint: endpoint,
+      detail: text,
+      partial: partial || ""
+    });
+  }
+
+  function abortError(endpoint, partial) {
+    var error = new ApiError("已停止生成", { type: "abort", endpoint: endpoint, partial: partial || "" });
+    error.name = "AbortError";
+    return error;
+  }
+
+  function withTimeout(externalSignal, timeoutMs) {
+    var controller = new AbortController();
+    var didTimeout = false;
+    var timer = setTimeout(function () {
+      didTimeout = true;
+      var timeoutError = new Error("请求超时");
+      timeoutError.name = "TimeoutError";
+      controller.abort(timeoutError);
+    }, timeoutMs || 90000);
+    function forwardAbort() {
+      controller.abort(externalSignal && externalSignal.reason);
+    }
+    if (externalSignal) {
+      if (externalSignal.aborted) forwardAbort();
+      else externalSignal.addEventListener("abort", forwardAbort, { once: true });
+    }
+    return {
+      signal: controller.signal,
+      done: function () {
+        clearTimeout(timer);
+        if (externalSignal) externalSignal.removeEventListener("abort", forwardAbort);
+      },
+      didTimeout: function () { return didTimeout; }
+    };
+  }
+
+  function headersFor(key) {
+    var headers = { "Content-Type": "application/json" };
+    if (String(key || "").trim()) headers.Authorization = "Bearer " + String(key).trim();
+    return headers;
+  }
+
+  function extractContent(payload) {
+    if (!payload || typeof payload !== "object") throw new Error("接口响应格式异常");
+    if (payload.error) throw new Error(payload.error.message || "接口返回错误");
+    var choice = payload.choices && payload.choices[0];
+    if (!choice) throw new Error("接口响应中没有 choices");
+    var message = choice.message || choice.delta || {};
+    var content = message.content == null ? choice.text : message.content;
+    if (Array.isArray(content)) {
+      content = content.map(function (part) {
+        return typeof part === "string" ? part : (part && part.text) || "";
+      }).join("");
+    }
+    return content == null ? "" : String(content);
+  }
+
+  function makeSSEParser(onDelta) {
+    var buffer = "";
+    var done = false;
+    function handleLine(rawLine) {
+      if (done) return;
+      var line = String(rawLine || "").replace(/\r$/, "");
+      if (!line || line.charAt(0) === ":") return;
+      if (line.indexOf("data:") !== 0) return;
+      var payloadText = line.slice(5).trim();
+      if (!payloadText) return;
+      if (payloadText === "[DONE]") {
+        done = true;
+        return;
+      }
+      var payload;
+      try {
+        payload = JSON.parse(payloadText);
+      } catch (error) {
+        return;
+      }
+      if (payload && payload.error) {
+        throw new Error(payload.error.message || "流式响应返回错误");
+      }
+      var delta = extractContent(payload);
+      if (delta) onDelta(delta);
+    }
+    return {
+      feed: function (chunk) {
+        buffer += chunk;
+        var lines = buffer.split("\n");
+        buffer = lines.pop();
+        lines.forEach(handleLine);
+      },
+      finish: function () {
+        if (buffer.trim()) handleLine(buffer);
+        buffer = "";
+      }
+    };
+  }
+
+  async function readError(response, endpoint) {
+    var detail = "";
+    try {
+      detail = await response.text();
+    } catch (error) {}
+    throw responseError(response.status, detail, endpoint);
+  }
+
+  async function performStream(attempt, body, key, signal, onDelta) {
+    var timeout = withTimeout(signal, 120000);
+    var content = "";
+    try {
+      var response = await fetch(attempt.url, {
+        method: "POST",
+        headers: headersFor(key),
+        body: JSON.stringify(body),
+        signal: timeout.signal
+      });
+      if (!response.ok) await readError(response, attempt.url);
+
+      var contentType = (response.headers.get("content-type") || "").toLowerCase();
+      if (!response.body || typeof response.body.getReader !== "function" || contentType.indexOf("text/event-stream") < 0) {
+        var raw = await response.text();
+        if (/^\s*data:/m.test(raw)) {
+          var textParser = makeSSEParser(function (delta) {
+            content += delta;
+            onDelta(delta);
+          });
+          textParser.feed(raw);
+          textParser.finish();
+          if (!content.trim()) throw new Error("接口返回了空内容");
+          return content;
+        }
+        var payload = JSON.parse(raw);
+        var whole = extractContent(payload);
+        if (whole) {
+          content += whole;
+          onDelta(whole);
+        }
+        return content;
+      }
+
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder("utf-8");
+      var parser = makeSSEParser(function (delta) {
+        content += delta;
+        onDelta(delta);
+      });
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+        parser.feed(decoder.decode(result.value, { stream: true }));
+      }
+      parser.feed(decoder.decode());
+      parser.finish();
+      if (!content.trim()) throw new Error("接口返回了空内容");
+      return content;
+    } catch (error) {
+      if (timeout.didTimeout()) {
+        throw new ApiError("请求超时，请稍后重试", {
+          type: "timeout",
+          endpoint: attempt.url,
+          detail: error && error.message,
+          partial: content
+        });
+      }
+      if (signal && signal.aborted) throw abortError(attempt.url, content);
+      if (error instanceof ApiError) {
+        error.partial = content;
+        throw error;
+      }
+      if (error && error.name === "AbortError" && error.message !== "请求超时") {
+        throw abortError(attempt.url, content);
+      }
+      var wrapped = networkError(error, attempt.url, content);
+      if (error && error.message) wrapped.detail = error.message;
+      throw wrapped;
+    } finally {
+      timeout.done();
+    }
+  }
+
+  async function performNonStream(attempt, body, key, signal) {
+    var timeout = withTimeout(signal, 90000);
+    try {
+      var response = await fetch(attempt.url, {
+        method: "POST",
+        headers: headersFor(key),
+        body: JSON.stringify(body),
+        signal: timeout.signal
+      });
+      if (!response.ok) await readError(response, attempt.url);
+      var text = await response.text();
+      var payload;
+      try {
+        payload = JSON.parse(text);
+      } catch (error) {
+        throw new Error("接口没有返回 JSON：" + text.slice(0, 160));
+      }
+      return extractContent(payload);
+    } catch (error) {
+      if (timeout.didTimeout()) {
+        throw new ApiError("请求超时，请稍后重试", {
+          type: "timeout",
+          endpoint: attempt.url,
+          detail: error && error.message
+        });
+      }
+      if (signal && signal.aborted) throw abortError(attempt.url);
+      if (error instanceof ApiError) throw error;
+      if (error && error.name === "AbortError" && error.message !== "请求超时") throw abortError(attempt.url);
+      var wrapped = networkError(error, attempt.url);
+      if (error && error.message) wrapped.detail = error.message;
+      throw wrapped;
+    } finally {
+      timeout.done();
+    }
+  }
+
+  async function withFallback(api, key, signal, attemptCallback) {
+    var attempts = endpointCandidates(api);
+    var failures = [];
+    for (var index = 0; index < attempts.length; index += 1) {
+      try {
+        return await attemptCallback(attempts[index]);
+      } catch (error) {
+        failures.push(error);
+        var retryable = error && (error.type === "network" || error.type === "server") && !error.partial;
+        if (!retryable || index === attempts.length - 1) throw error;
+      }
+    }
+    throw failures[failures.length - 1];
+  }
+
+  async function streamChat(options) {
+    var api = options.api;
+    var messages = options.messages;
+    var key = String(options.key || "").trim();
+    if (!key) throw new ApiError("请先填写 API Key", { type: "auth" });
+    var body = {
+      model: api.model || "deepseek-chat",
+      messages: messages,
+      temperature: Number(api.temperature) || 1,
+      stream: true,
+      max_tokens: ({ short: 220, medium: 460, long: 950, epic: 1600 })[api.replyLength] || 220
+    };
+    return withFallback(api, key, options.signal, function (attempt) {
+      return performStream(attempt, body, key, options.signal, options.onDelta);
+    });
+  }
+
+  async function requestText(options) {
+    var api = options.api;
+    var key = String(options.key || "").trim();
+    if (!key) throw new ApiError("请先填写 API Key", { type: "auth" });
+    var body = {
+      model: api.model || "deepseek-chat",
+      messages: options.messages,
+      temperature: options.temperature == null ? 0.3 : options.temperature,
+      stream: false
+    };
+    if (options.maxTokens) body.max_tokens = options.maxTokens;
+    return withFallback(api, key, options.signal, function (attempt) {
+      return performNonStream(attempt, body, key, options.signal);
+    });
+  }
+
+  async function testConnection(api, key) {
+    return requestText({
+      api: api,
+      key: key,
+      messages: [{ role: "user", content: "只回复 OK" }],
+      temperature: 0,
+      maxTokens: 8
+    });
+  }
+
+  function describeError(error) {
+    if (!error) return "未知错误";
+    var text = error.message || String(error);
+    if (error.type === "network") {
+      return text + (error.detail ? "（" + Util.clampText(error.detail, 120) + "）" : "");
+    }
+    if (error.detail && error.type !== "auth" && error.type !== "rate") {
+      return text + "：" + Util.clampText(error.detail, 140);
+    }
+    return text;
+  }
+
+  YuC.Api = {
+    ApiError: ApiError,
+    normalizeEndpoint: normalizeEndpoint,
+    streamChat: streamChat,
+    requestText: requestText,
+    testConnection: testConnection,
+    describeError: describeError
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC = root.YuC || {};
+  var Util = YuC.Util;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function setValue(element, value) {
+    if (element && element.value !== String(value == null ? "" : value)) {
+      element.value = String(value == null ? "" : value);
+    }
+  }
+
+  function createAvatar(content, className, name) {
+    var avatar = document.createElement("span");
+    avatar.className = className || "mini-avatar";
+    if (content) {
+      var image = document.createElement("img");
+      image.alt = "";
+      image.src = content;
+      image.onerror = function () {
+        image.remove();
+        avatar.textContent = Util.initial(name);
+      };
+      avatar.appendChild(image);
+    } else {
+      avatar.textContent = Util.initial(name);
+    }
+    return avatar;
+  }
+
+  function setPickerAvatar(picker, image, fallback, content, name) {
+    if (!picker || !image || !fallback) return;
+    fallback.textContent = Util.initial(name);
+    if (content) {
+      image.src = content;
+      image.hidden = false;
+      fallback.hidden = true;
+    } else {
+      image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+      image.hidden = true;
+      fallback.hidden = false;
+    }
+  }
+
+  function autoGrow(textarea) {
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(130, Math.max(46, textarea.scrollHeight)) + "px";
+  }
+
+  function isDialogOpen(dialog) {
+    return !!(dialog && dialog.open);
+  }
+
+  function openDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+  }
+
+  function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
+    else dialog.removeAttribute("open");
+  }
+
+  var els = {};
+  var handlers = {};
+  var currentCastId = "";
+  var editingNewCast = false;
+  var toastTimer = 0;
+
+  function init(nextHandlers) {
+    handlers = nextHandlers || {};
+    [
+      "setupView", "chatView", "openSettingsButton", "backgroundFileInput", "storyTitleInput",
+      "backgroundInput", "backgroundCount", "backgroundFileStatus", "addCastButton",
+      "parseCastButton", "setupCastList", "setupCastEmpty", "parseState", "userAvatarPicker",
+      "userAvatarFallback", "userAvatarImage", "userAvatarInput", "userNameInput",
+      "userIdentityInput", "connectionSummary", "startStoryButton", "backToSetupButton",
+      "chatTitle", "openMemoryButton", "memoryStatus", "undoButton", "openCastButton",
+      "castStrip", "messageList", "continueButton", "messageInput", "sendButton",
+      "stopButton", "settingsDialog", "connectionModeInput", "endpointInput",
+      "relayEndpointInput", "relayField", "apiKeyInput", "rememberKeyInput", "modelInput",
+      "replyLengthInput", "temperatureInput", "temperatureOutput", "testConnectionButton",
+      "saveSettingsButton", "settingsStatus", "backupStatus", "exportBackupButton", "exportPortableButton",
+      "importBackupButton", "restoreBackupButton", "importBackupInput", "castDialog", "closeCastButton",
+      "modalAddCastButton", "modalParseCastButton", "modalCastList", "castEditorDialog",
+      "castEditorTitle", "castAvatarPicker", "castAvatarFallback", "castAvatarImage",
+      "castAvatarInput", "castNameInput", "castIdentityInput", "castAppearanceInput",
+      "castImportanceInput", "castStateInput", "deleteCastButton", "saveCastButton",
+      "memoryDialog", "closeMemoryButton", "memorySummaryText", "memoryWorldText",
+      "memoryRelationsText", "memoryThreadsText", "toast"
+    ].forEach(function (id) {
+      els[id] = byId(id);
+    });
+
+    els.backgroundInput.addEventListener("input", function () {
+      els.backgroundCount.textContent = els.backgroundInput.value.length + " / 60000 字";
+      if (handlers.onBackgroundChange) handlers.onBackgroundChange(els.backgroundInput.value);
+    });
+    els.storyTitleInput.addEventListener("input", function () {
+      if (handlers.onTitleChange) handlers.onTitleChange(els.storyTitleInput.value);
+    });
+    els.userNameInput.addEventListener("input", function () {
+      if (handlers.onUserChange) handlers.onUserChange({
+        name: els.userNameInput.value,
+        identity: els.userIdentityInput.value
+      });
+    });
+    els.userIdentityInput.addEventListener("input", function () {
+      if (handlers.onUserChange) handlers.onUserChange({
+        name: els.userNameInput.value,
+        identity: els.userIdentityInput.value
+      });
+    });
+    els.userAvatarInput.addEventListener("change", function () {
+      onAvatarFile(els.userAvatarInput, function (dataUrl, error) {
+        if (error) {
+          toast(error);
+          return;
+        }
+        if (handlers.onUserAvatar) handlers.onUserAvatar(dataUrl);
+      });
+    });
+    els.backgroundFileInput.addEventListener("change", function () {
+      var file = els.backgroundFileInput.files && els.backgroundFileInput.files[0];
+      if (!file) return;
+      els.backgroundFileStatus.textContent = "正在读取…";
+      YuC.Importer.readFileAsText(file).then(function (text) {
+        if (text.length > 60000) throw new Error("背景故事超过 6 万字，请拆分或精简后再导入");
+        els.backgroundInput.value = text;
+        els.backgroundInput.dispatchEvent(new Event("input"));
+        els.backgroundFileStatus.textContent = "已导入 " + file.name;
+        toast("背景故事已导入");
+      }).catch(function (error) {
+        els.backgroundFileStatus.textContent = "";
+        toast(error.message || String(error));
+      }).finally(function () {
+        els.backgroundFileInput.value = "";
+      });
+    });
+    els.openSettingsButton.addEventListener("click", function () {
+      if (handlers.onOpenSettings) handlers.onOpenSettings();
+    });
+    els.saveSettingsButton.addEventListener("click", function () {
+      if (handlers.onSaveSettings) handlers.onSaveSettings(readSettingsForm());
+    });
+    els.testConnectionButton.addEventListener("click", function () {
+      if (handlers.onTestConnection) handlers.onTestConnection(readSettingsForm());
+    });
+    els.connectionModeInput.addEventListener("change", function () {
+      els.relayField.classList.toggle("relay-required", els.connectionModeInput.value === "relay");
+    });
+    els.temperatureInput.addEventListener("input", function () {
+      els.temperatureOutput.textContent = Number(els.temperatureInput.value).toFixed(1);
+    });
+    els.exportBackupButton.addEventListener("click", function () {
+      if (handlers.onExportBackup) handlers.onExportBackup();
+    });
+    els.exportPortableButton.addEventListener("click", function () {
+      if (handlers.onExportPortable) handlers.onExportPortable();
+    });
+    els.importBackupButton.addEventListener("click", function () {
+      els.importBackupInput.click();
+    });
+    els.importBackupInput.addEventListener("change", function () {
+      var file = els.importBackupInput.files && els.importBackupInput.files[0];
+      if (file && handlers.onImportBackup) handlers.onImportBackup(file);
+      els.importBackupInput.value = "";
+    });
+    els.restoreBackupButton.addEventListener("click", function () {
+      if (handlers.onRestoreBackup) handlers.onRestoreBackup();
+    });
+
+    els.startStoryButton.addEventListener("click", function () {
+      if (handlers.onStartStory) handlers.onStartStory();
+    });
+    els.parseCastButton.addEventListener("click", function () {
+      if (handlers.onParseCast) handlers.onParseCast();
+    });
+    els.modalParseCastButton.addEventListener("click", function () {
+      if (handlers.onParseCast) handlers.onParseCast();
+    });
+    els.addCastButton.addEventListener("click", function () {
+      openCastEditor(null, true);
+    });
+    els.modalAddCastButton.addEventListener("click", function () {
+      openCastEditor(null, true);
+    });
+    els.setupCastList.addEventListener("click", onCastListClick);
+    els.modalCastList.addEventListener("click", onCastListClick);
+    els.castStrip.addEventListener("click", function (event) {
+      var target = event.target.closest("[data-cast-id]");
+      if (!target) return;
+      if (handlers.onOpenCastItem) handlers.onOpenCastItem(target.getAttribute("data-cast-id"));
+    });
+
+    els.backToSetupButton.addEventListener("click", function () {
+      if (handlers.onBackToSetup) handlers.onBackToSetup();
+    });
+    els.openCastButton.addEventListener("click", function () {
+      openDialog(els.castDialog);
+    });
+    els.closeCastButton.addEventListener("click", function () {
+      closeDialog(els.castDialog);
+    });
+    els.openMemoryButton.addEventListener("click", function () {
+      openDialog(els.memoryDialog);
+    });
+    els.closeMemoryButton.addEventListener("click", function () {
+      closeDialog(els.memoryDialog);
+    });
+    els.undoButton.addEventListener("click", function () {
+      if (handlers.onUndo) handlers.onUndo();
+    });
+    els.continueButton.addEventListener("click", function () {
+      if (handlers.onContinue) handlers.onContinue();
+    });
+    els.sendButton.addEventListener("click", function () {
+      if (handlers.onSend) handlers.onSend(els.messageInput.value);
+    });
+    els.stopButton.addEventListener("click", function () {
+      if (handlers.onStop) handlers.onStop();
+    });
+    els.messageInput.addEventListener("input", function () {
+      autoGrow(els.messageInput);
+    });
+    els.messageInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        if (handlers.onSend) handlers.onSend(els.messageInput.value);
+      }
+    });
+
+    els.saveCastButton.addEventListener("click", function () {
+      var data = readCastForm();
+      if (!data.name) {
+        toast("请填写人物姓名");
+        els.castNameInput.focus();
+        return;
+      }
+      if (handlers.onSaveCast) handlers.onSaveCast(data, editingNewCast ? "" : currentCastId);
+    });
+    els.deleteCastButton.addEventListener("click", function () {
+      if (!currentCastId) return;
+      if (handlers.onDeleteCast) handlers.onDeleteCast(currentCastId);
+    });
+    els.castAvatarInput.addEventListener("change", function () {
+      onAvatarFile(els.castAvatarInput, function (dataUrl, error) {
+        if (error) {
+          toast(error);
+          return;
+        }
+        setPickerAvatar(els.castAvatarPicker, els.castAvatarImage, els.castAvatarFallback, dataUrl, els.castNameInput.value);
+        els.castAvatarPicker.setAttribute("data-avatar", dataUrl);
+      });
+    });
+    els.castNameInput.addEventListener("input", function () {
+      setPickerAvatar(
+        els.castAvatarPicker,
+        els.castAvatarImage,
+        els.castAvatarFallback,
+        els.castAvatarPicker.getAttribute("data-avatar") || "",
+        els.castNameInput.value
+      );
+    });
+
+    [els.settingsDialog, els.castDialog, els.castEditorDialog, els.memoryDialog].forEach(function (dialog) {
+      if (!dialog) return;
+      dialog.addEventListener("click", function (event) {
+        if (event.target === dialog) closeDialog(dialog);
+      });
+    });
+  }
+
+  function onCastListClick(event) {
+    var target = event.target.closest("[data-cast-id]");
+    if (!target) return;
+    if (handlers.onOpenCastItem) handlers.onOpenCastItem(target.getAttribute("data-cast-id"));
+  }
+
+  function onAvatarFile(input, callback) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    compressAvatar(file).then(function (dataUrl) {
+      callback(dataUrl, "");
+    }).catch(function (error) {
+      callback("", error.message || String(error));
+    }).finally(function () {
+      input.value = "";
+    });
+  }
+
+  function compressAvatar(file) {
+    return new Promise(function (resolve, reject) {
+      if (!/^image\/(png|jpeg|webp)$/i.test(file.type)) {
+        reject(new Error("请选择 PNG、JPEG 或 WebP 图片"));
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        reject(new Error("图片不能超过 10 MB"));
+        return;
+      }
+      var reader = new FileReader();
+      reader.onerror = function () {
+        reject(new Error("图片读取失败"));
+      };
+      reader.onload = function () {
+        var image = new Image();
+        image.onerror = function () {
+          reject(new Error("图片解码失败"));
+        };
+        image.onload = function () {
+          try {
+            var scale = Math.min(1, 512 / Math.max(image.width, image.height));
+            var canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            var context = canvas.getContext("2d");
+            context.fillStyle = "#f4efe6";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.82));
+          } catch (error) {
+            reject(new Error("图片处理失败"));
+          }
+        };
+        image.src = String(reader.result || "");
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderSetup(state, viewState, hasKey) {
+    setValue(els.storyTitleInput, state.story.title);
+    setValue(els.backgroundInput, state.story.background);
+    setValue(els.userNameInput, state.user.name);
+    setValue(els.userIdentityInput, state.user.identity);
+    els.backgroundCount.textContent = state.story.background.length + " / 60000 字";
+    setPickerAvatar(els.userAvatarPicker, els.userAvatarImage, els.userAvatarFallback, state.user.avatar, state.user.name || "你");
+    renderCast(state.cast);
+
+    if (viewState && viewState.parseError) {
+      els.parseState.textContent = viewState.parseError;
+      els.parseState.classList.add("error");
+    } else if (viewState && viewState.parsing) {
+      els.parseState.textContent = "正在从背景中辨认主要人物…";
+      els.parseState.classList.remove("error");
+    } else if (viewState && viewState.parseMessage) {
+      els.parseState.textContent = viewState.parseMessage;
+      els.parseState.classList.remove("error");
+    } else {
+      els.parseState.textContent = "";
+      els.parseState.classList.remove("error");
+    }
+    els.parseCastButton.disabled = !!(viewState && viewState.parsing);
+    els.modalParseCastButton.disabled = !!(viewState && viewState.parsing);
+    els.startStoryButton.textContent = state.messages.length ? "回到这个故事" : "开始对戏";
+
+    if (hasKey) {
+      els.connectionSummary.classList.add("ready");
+      els.connectionSummary.textContent = "接口已配置 · " + (state.api.model || "deepseek-chat") + " · " +
+        (state.api.mode === "relay" ? "中转连接" : "直连");
+    } else {
+      els.connectionSummary.classList.remove("ready");
+      els.connectionSummary.textContent = "还没有填写 API Key。解析人物和开始演出前需要先完成连接设置。";
+    }
+  }
+
+  function showView(name) {
+    var chat = name === "chat";
+    els.setupView.hidden = chat;
+    els.chatView.hidden = !chat;
+  }
+
+  function renderCast(cast) {
+    var lists = [els.setupCastList, els.modalCastList];
+    lists.forEach(function (list) {
+      list.replaceChildren();
+      (cast || []).forEach(function (character) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "cast-card";
+        button.setAttribute("data-cast-id", character.id);
+        button.appendChild(createAvatar(character.avatar, "cast-avatar", character.name));
+        var copy = document.createElement("span");
+        copy.className = "cast-copy";
+        var name = document.createElement("span");
+        name.className = "cast-name";
+        name.textContent = character.name;
+        var role = document.createElement("span");
+        role.className = "cast-role";
+        role.textContent = character.identity || importanceText(character.importance);
+        copy.append(name, role);
+        button.appendChild(copy);
+        list.appendChild(button);
+      });
+    });
+    els.setupCastEmpty.hidden = !!(cast && cast.length);
+  }
+
+  function importanceText(value) {
+    if (value === "main") return "主要人物";
+    if (value === "background") return "背景人物";
+    return "次要人物";
+  }
+
+  function renderChat(state, viewState) {
+    els.chatTitle.textContent = Util.deriveTitle(state.story.background, state.story.title);
+    renderCastStrip(state.cast);
+    renderMessages(state.messages, state.user, viewState);
+    renderMemoryStatus(state, viewState);
+    els.undoButton.disabled = !(state.checkpoints && state.checkpoints.length) || !!viewState.busy;
+    setBusy(!!viewState.busy);
+    setMemoryDialog(state);
+  }
+
+  function renderCastStrip(cast) {
+    els.castStrip.replaceChildren();
+    if (!cast || !cast.length) {
+      els.castStrip.hidden = true;
+      return;
+    }
+    els.castStrip.hidden = false;
+    cast.slice(0, 12).forEach(function (character) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "cast-chip";
+      button.setAttribute("data-cast-id", character.id);
+      button.appendChild(createAvatar(character.avatar, "mini-avatar", character.name));
+      var label = document.createElement("span");
+      label.textContent = character.name;
+      button.appendChild(label);
+      els.castStrip.appendChild(button);
+    });
+  }
+
+  function renderMessages(messages, user, viewState) {
+    var list = els.messageList;
+    var shouldStick = list.scrollHeight - list.scrollTop - list.clientHeight < 180;
+    list.replaceChildren();
+    if (!messages || !messages.length) {
+      var empty = document.createElement("div");
+      empty.className = "chat-empty";
+      var strong = document.createElement("strong");
+      strong.textContent = "舞台已经亮起";
+      var copy = document.createElement("span");
+      copy.textContent = "点“继续”让旁白开场；也可以写“对白或行动 # 本次要求”。";
+      empty.append(strong, copy);
+      list.appendChild(empty);
+      return;
+    }
+    messages.forEach(function (message) {
+      var row = document.createElement("article");
+      row.className = "message " + message.role + (message.error ? " error" : "") +
+        (message.streaming ? " streaming" : "");
+      row.setAttribute("data-message-id", message.id);
+
+      if (message.role === "user") {
+        row.appendChild(createAvatar(user.avatar, "message-avatar", user.name || "你"));
+      } else {
+        var narrator = document.createElement("span");
+        narrator.className = "message-avatar";
+        narrator.textContent = "叙";
+        row.appendChild(narrator);
+      }
+
+      var wrap = document.createElement("div");
+      wrap.className = "message-content-wrap";
+      var label = document.createElement("div");
+      label.className = "message-label";
+      label.textContent = message.role === "user" ? (user.name || "你") : "旁白";
+      wrap.appendChild(label);
+      if (message.content || message.streaming) {
+        var bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        bubble.textContent = message.content || "";
+        wrap.appendChild(bubble);
+      }
+      if (message.instruction) {
+        var instruction = document.createElement("div");
+        instruction.className = "message-instruction";
+        instruction.textContent = "本次要求：" + message.instruction;
+        wrap.appendChild(instruction);
+      }
+      row.appendChild(wrap);
+      list.appendChild(row);
+    });
+    if (viewState && viewState.forceBottom || shouldStick) scrollToBottom();
+  }
+
+  function updateStreamingMessage(message) {
+    if (!message) return;
+    var row = els.messageList.querySelector('[data-message-id="' + cssEscape(message.id) + '"]');
+    if (!row) return;
+    row.classList.toggle("streaming", !!message.streaming);
+    row.classList.toggle("error", !!message.error);
+    var bubble = row.querySelector(".message-bubble");
+    if (bubble) bubble.textContent = message.content || "";
+    scrollToBottom();
+  }
+
+  function cssEscape(value) {
+    if (root.CSS && typeof root.CSS.escape === "function") return root.CSS.escape(value);
+    return String(value).replace(/["\\]/g, "\\$&");
+  }
+
+  function scrollToBottom() {
+    requestAnimationFrame(function () {
+      els.messageList.scrollTop = els.messageList.scrollHeight;
+    });
+  }
+
+  function renderMemoryStatus(state, viewState) {
+    els.memoryStatus.textContent = viewState && viewState.memoryStatus
+      ? viewState.memoryStatus
+      : defaultMemoryStatus(state);
+    els.openMemoryButton.setAttribute("aria-label", "查看剧情记忆：" + els.memoryStatus.textContent);
+    els.openMemoryButton.classList.toggle("ready", !!state.memory.summary);
+    els.openMemoryButton.classList.toggle("busy", !!(viewState && viewState.memoryBusy));
+  }
+
+  function defaultMemoryStatus(state) {
+    var progress = state.memory.turnsSinceSummary;
+    if (state.memory.lastError) return "记忆待重试";
+    if (state.memory.summary) return "剧情记忆 " + progress + "/8";
+    return "记忆待建立 " + progress + "/8";
+  }
+
+  function setMemoryDialog(state) {
+    els.memorySummaryText.textContent = state.memory.summary || "还没有建立摘要。完成 8 段演出后会自动整理。";
+    els.memoryWorldText.textContent = state.memory.worldState || "—";
+    els.memoryRelationsText.textContent = state.memory.relationships || "—";
+    els.memoryThreadsText.textContent = state.memory.openThreads || "—";
+  }
+
+  function setBusy(busy) {
+    els.continueButton.disabled = busy;
+    els.sendButton.disabled = busy;
+    els.messageInput.disabled = busy;
+    els.sendButton.hidden = busy;
+    els.stopButton.hidden = !busy;
+    if (!busy) autoGrow(els.messageInput);
+  }
+
+  function clearMessageInput() {
+    els.messageInput.value = "";
+    autoGrow(els.messageInput);
+  }
+
+  function toast(message) {
+    if (!els.toast) return;
+    clearTimeout(toastTimer);
+    els.toast.textContent = String(message || "");
+    els.toast.classList.add("show");
+    toastTimer = setTimeout(function () {
+      els.toast.classList.remove("show");
+    }, 2600);
+  }
+
+  function openSettings(state, key) {
+    setValue(els.connectionModeInput, state.api.mode);
+    setValue(els.endpointInput, state.api.endpoint);
+    setValue(els.relayEndpointInput, state.api.relayEndpoint);
+    setValue(els.apiKeyInput, key || "");
+    els.rememberKeyInput.checked = !!state.api.rememberKey;
+    setValue(els.modelInput, state.api.model);
+    setValue(els.replyLengthInput, state.api.replyLength);
+    setValue(els.temperatureInput, state.api.temperature);
+    els.temperatureOutput.textContent = Number(state.api.temperature).toFixed(1);
+    els.settingsStatus.textContent = "";
+    els.settingsStatus.classList.remove("error");
+    refreshBackupStatus();
+    openDialog(els.settingsDialog);
+  }
+
+  function readSettingsForm() {
+    return {
+      api: {
+        mode: els.connectionModeInput.value === "relay" ? "relay" : "direct",
+        endpoint: els.endpointInput.value.trim(),
+        relayEndpoint: els.relayEndpointInput.value.trim(),
+        model: els.modelInput.value.trim(),
+        temperature: Number(els.temperatureInput.value),
+        replyLength: els.replyLengthInput.value,
+        rememberKey: !!els.rememberKeyInput.checked
+      },
+      key: els.apiKeyInput.value.trim()
+    };
+  }
+
+  function setSettingsStatus(message, isError) {
+    els.settingsStatus.textContent = message;
+    els.settingsStatus.classList.toggle("error", !!isError);
+  }
+
+  function refreshBackupStatus() {
+    if (els.backupStatus) els.backupStatus.textContent = YuC.Backup.describeLatest();
+  }
+
+  function closeSettings() {
+    closeDialog(els.settingsDialog);
+  }
+
+  function openCastEditor(character, isNew) {
+    editingNewCast = !!isNew;
+    currentCastId = character && character.id || "";
+    els.castEditorTitle.textContent = isNew ? "添加人物" : "编辑人物";
+    setValue(els.castNameInput, character && character.name || "");
+    setValue(els.castIdentityInput, character && character.identity || "");
+    setValue(els.castAppearanceInput, character && character.appearance || "");
+    setValue(els.castImportanceInput, character && character.importance || "supporting");
+    setValue(els.castStateInput, character && character.currentState || "");
+    var avatar = character && character.avatar || "";
+    els.castAvatarPicker.setAttribute("data-avatar", avatar);
+    setPickerAvatar(els.castAvatarPicker, els.castAvatarImage, els.castAvatarFallback, avatar, character && character.name || "人");
+    els.deleteCastButton.hidden = !!isNew;
+    openDialog(els.castEditorDialog);
+  }
+
+  function readCastForm() {
+    return {
+      name: els.castNameInput.value.trim(),
+      identity: els.castIdentityInput.value.trim(),
+      appearance: els.castAppearanceInput.value.trim(),
+      importance: els.castImportanceInput.value,
+      currentState: els.castStateInput.value.trim(),
+      avatar: els.castAvatarPicker.getAttribute("data-avatar") || ""
+    };
+  }
+
+  function closeCastEditor() {
+    closeDialog(els.castEditorDialog);
+  }
+
+  function setParseState(text, isError) {
+    els.parseState.textContent = text || "";
+    els.parseState.classList.toggle("error", !!isError);
+  }
+
+  function setContinueEnabled(enabled) {
+    els.continueButton.disabled = !enabled;
+  }
+
+  YuC.UI = {
+    els: els,
+    init: init,
+    showView: showView,
+    renderSetup: renderSetup,
+    renderChat: renderChat,
+    renderCast: renderCast,
+    updateStreamingMessage: updateStreamingMessage,
+    scrollToBottom: scrollToBottom,
+    setBusy: setBusy,
+    clearMessageInput: clearMessageInput,
+    toast: toast,
+    openSettings: openSettings,
+    closeSettings: closeSettings,
+    readSettingsForm: readSettingsForm,
+    setSettingsStatus: setSettingsStatus,
+    refreshBackupStatus: refreshBackupStatus,
+    openCastEditor: openCastEditor,
+    readCastForm: readCastForm,
+    closeCastEditor: closeCastEditor,
+    setParseState: setParseState,
+    setContinueEnabled: setContinueEnabled,
+    closeDialog: closeDialog,
+    setPickerAvatar: setPickerAvatar,
+    autoGrow: autoGrow
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function (root) {
+  "use strict";
+
+  var YuC = root.YuC;
+  var Util = YuC.Util;
+  var state = YuC.Store.load();
+  var viewState = {
+    view: state.story.startedAt ? "chat" : "setup",
+    apiKey: YuC.Store.readApiKey(state.api.rememberKey),
+    busy: false,
+    parsing: false,
+    memoryBusy: false,
+    memoryStatus: "",
+    parseError: "",
+    parseMessage: "",
+    forceBottom: true,
+    abortController: null,
+    stopping: false,
+    saveTimer: 0
+  };
+
+  function saveNow() {
+    try {
+      YuC.Store.save(state);
+    } catch (error) {
+      YuC.UI.toast("保存失败，可能是本地存储空间不足");
+    }
+  }
+
+  function saveSoon() {
+    clearTimeout(viewState.saveTimer);
+    viewState.saveTimer = setTimeout(saveNow, 350);
+  }
+
+  function backupNow(reason) {
+    try {
+      var result = YuC.Backup.auto(state, reason);
+      if (result.error && !result.skipped) console.warn(result.error);
+      YuC.UI.refreshBackupStatus();
+      return result;
+    } catch (error) {
+      console.warn("自动备份失败", error);
+      return { created: false, error: error.message || String(error) };
+    }
+  }
+
+  function render(forceBottom) {
+    if (forceBottom) viewState.forceBottom = true;
+    YuC.UI.renderSetup(state, viewState, !!viewState.apiKey);
+    if (viewState.view === "chat") YuC.UI.renderChat(state, viewState);
+    viewState.forceBottom = false;
+  }
+
+  function show(view) {
+    viewState.view = view;
+    YuC.UI.showView(view);
+    render(false);
+  }
+
+  function requireApi() {
+    if (viewState.apiKey) return true;
+    YuC.UI.toast("请先填写 API Key");
+    YuC.UI.openSettings(state, viewState.apiKey);
+    return false;
+  }
+
+  function findCast(id) {
+    return state.cast.find(function (character) {
+      return character.id === id;
+    });
+  }
+
+  function normalizeCastRecord(data, id) {
+    return {
+      id: id || Util.uid("cast"),
+      name: Util.clampText(data.name, 30),
+      identity: Util.clampText(data.identity, 160),
+      appearance: Util.clampText(data.appearance, 600),
+      importance: ["main", "supporting", "background"].indexOf(data.importance) >= 0
+        ? data.importance
+        : "supporting",
+      currentState: Util.clampText(data.currentState, 600),
+      avatar: String(data.avatar || ""),
+      locked: true
+    };
+  }
+
+  function bindHandlers() {
+    YuC.UI.init({
+      onBackgroundChange: function (value) {
+        state.story.background = value;
+        viewState.parseError = "";
+        viewState.parseMessage = "";
+        saveSoon();
+      },
+      onTitleChange: function (value) {
+        state.story.title = Util.clampText(value, 60);
+        saveSoon();
+      },
+      onUserChange: function (data) {
+        state.user.name = Util.clampText(data.name, 30);
+        state.user.identity = Util.clampText(data.identity, 160);
+        saveSoon();
+      },
+      onUserAvatar: function (dataUrl) {
+        state.user.avatar = dataUrl;
+        saveNow();
+        render(false);
+      },
+      onOpenSettings: function () {
+        YuC.UI.openSettings(state, viewState.apiKey);
+      },
+      onSaveSettings: saveSettings,
+      onTestConnection: testConnection,
+      onExportBackup: exportBackup,
+      onExportPortable: exportPortable,
+      onImportBackup: importBackup,
+      onRestoreBackup: restoreBackup,
+      onStartStory: startStory,
+      onParseCast: parseCast,
+      onOpenCastItem: function (id) {
+        var character = findCast(id);
+        if (character) YuC.UI.openCastEditor(Util.clone(character), false);
+      },
+      onSaveCast: saveCast,
+      onDeleteCast: deleteCast,
+      onBackToSetup: function () {
+        if (viewState.busy) {
+          YuC.UI.toast("请先停止当前演出");
+          return;
+        }
+        saveNow();
+        show("setup");
+      },
+      onContinue: function () {
+        beginGeneration("");
+      },
+      onSend: function (text) {
+        sendUserMessage(text);
+      },
+      onStop: stopGeneration,
+      onUndo: undoLastSegment
+    });
+  }
+
+  function timestampForFile(date) {
+    var value = date || new Date();
+    function pad(number) { return String(number).padStart(2, "0"); }
+    return value.getFullYear() + pad(value.getMonth() + 1) + pad(value.getDate()) + "-" +
+      pad(value.getHours()) + pad(value.getMinutes()) + pad(value.getSeconds());
+  }
+
+  function downloadText(filename, text, mime) {
+    var blob = new Blob([text], { type: mime || "application/json;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function exportBackup() {
+    downloadText("语C-备份-" + timestampForFile() + ".json", YuC.Backup.exportText(state));
+    YuC.UI.setSettingsStatus("备份文件已导出");
+  }
+
+  function exportPortable() {
+    try {
+      var documentCopy = document.documentElement.cloneNode(true);
+      documentCopy.querySelectorAll("dialog[open]").forEach(function (dialog) {
+        dialog.removeAttribute("open");
+      });
+      var embedded = documentCopy.querySelector("#embeddedBackup");
+      var payload = JSON.stringify({
+        format: "yuc-html-snapshot-v1",
+        createdAt: new Date().toISOString(),
+        state: state
+      }).replace(/</g, "\\u003c");
+      embedded.textContent = payload;
+      var html = "<!doctype html>\n" + documentCopy.outerHTML;
+      downloadText("语C-完整存档-" + timestampForFile() + ".html", html, "text/html;charset=utf-8");
+      YuC.UI.setSettingsStatus("完整存档 HTML 已导出；打开它即可恢复记录");
+    } catch (error) {
+      YuC.UI.setSettingsStatus("导出完整 HTML 失败：" + (error.message || error), true);
+    }
+  }
+
+  function readJsonFile(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file || file.size > 10 * 1024 * 1024) {
+        reject(new Error("备份文件为空或超过 10 MB"));
+        return;
+      }
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("读取备份文件失败")); };
+      reader.onload = function () { resolve(String(reader.result || "")); };
+      reader.readAsText(file, "utf-8");
+    });
+  }
+
+  function applyRestoredState(restored) {
+    state = YuC.State.sanitize(restored);
+    YuC.App.state = state;
+    viewState.view = state.story.startedAt ? "chat" : "setup";
+    viewState.memoryStatus = "";
+    viewState.parseMessage = "";
+    viewState.parseError = "";
+    saveNow();
+    YuC.Store.saveApiKey(viewState.apiKey, state.api.rememberKey);
+    YuC.UI.closeSettings();
+    YuC.UI.showView(viewState.view);
+    render(true);
+  }
+
+  async function importBackup(file) {
+    try {
+      var text = await readJsonFile(file);
+      var restored = YuC.Backup.parseImport(text);
+      if (!root.confirm("导入备份会替换当前记录。当前记录会先自动备份，是否继续？")) return;
+      backupNow("导入前");
+      applyRestoredState(restored);
+      backupNow("导入备份");
+      YuC.UI.toast("备份已导入");
+    } catch (error) {
+      YuC.UI.setSettingsStatus(error.message || String(error), true);
+    }
+  }
+
+  function restoreBackup() {
+    try {
+      var target = YuC.Backup.restoreLatest();
+      if (!root.confirm("恢复最近的自动快照？当前记录会先自动备份。")) return;
+      backupNow("恢复前");
+      applyRestoredState(target.state);
+      backupNow("恢复快照");
+      YuC.UI.toast("已恢复最近自动快照");
+    } catch (error) {
+      YuC.UI.setSettingsStatus(error.message || String(error), true);
+    }
+  }
+
+  function saveSettings(data) {
+    var api = data.api;
+    if (!api.endpoint) {
+      YuC.UI.setSettingsStatus("请填写 API 地址", true);
+      return;
+    }
+    if (api.mode === "relay" && !api.relayEndpoint) {
+      YuC.UI.setSettingsStatus("中转模式需要填写中转地址", true);
+      return;
+    }
+    try {
+      YuC.Api.normalizeEndpoint(api.endpoint);
+      if (api.relayEndpoint) YuC.Api.normalizeEndpoint(api.relayEndpoint);
+    } catch (error) {
+      YuC.UI.setSettingsStatus(error.message || String(error), true);
+      return;
+    }
+    state.api = {
+      mode: api.mode,
+      endpoint: api.endpoint,
+      relayEndpoint: api.relayEndpoint,
+      model: api.model || "deepseek-chat",
+      temperature: Math.max(0, Math.min(1.5, Number(api.temperature) || 1)),
+      replyLength: api.replyLength || "short",
+      rememberKey: !!api.rememberKey
+    };
+    viewState.apiKey = data.key;
+    try {
+      YuC.Store.saveApiKey(data.key, api.rememberKey);
+    } catch (error) {
+      YuC.UI.setSettingsStatus(error.message || String(error), true);
+      return;
+    }
+    saveNow();
+    backupNow("修改设置");
+    render(false);
+    YuC.UI.setSettingsStatus("设置已保存");
+    setTimeout(YuC.UI.closeSettings, 320);
+  }
+
+  async function testConnection(data) {
+    if (!data.key) {
+      YuC.UI.setSettingsStatus("请先填写 API Key", true);
+      return;
+    }
+    YuC.UI.setSettingsStatus("正在测试连接…");
+    try {
+      var response = await YuC.Api.testConnection(data.api, data.key);
+      YuC.UI.setSettingsStatus(response.trim() ? "连接成功：" + Util.clampText(response, 40) : "连接成功");
+    } catch (error) {
+      YuC.UI.setSettingsStatus(YuC.Api.describeError(error), true);
+    }
+  }
+
+  async function parseCast() {
+    if (viewState.parsing) return;
+    if (!Util.clampText(state.story.background)) {
+      YuC.UI.toast("请先填写背景故事");
+      YuC.UI.els.backgroundInput.focus();
+      return;
+    }
+    if (!requireApi()) return;
+    viewState.parsing = true;
+    viewState.parseError = "";
+    YuC.UI.setParseState("正在从背景中辨认主要人物…", false);
+    render(false);
+    try {
+      var text = await YuC.Api.requestText({
+        api: state.api,
+        key: viewState.apiKey,
+        messages: YuC.Prompt.buildExtractionMessages(state.story.background),
+        temperature: 0.3,
+        maxTokens: 1800
+      });
+      var extracted = YuC.Importer.parseCharacterExtraction(text);
+      if (!extracted.length) throw new Error("没有识别到可用的主要人物");
+      state.cast = YuC.Importer.mergeCast(state.cast, extracted);
+      viewState.parseMessage = "已提取 " + extracted.length + " 名人物，可继续编辑头像和资料。";
+      saveNow();
+      backupNow("解析人物");
+      YuC.UI.setParseState(viewState.parseMessage, false);
+      YuC.UI.toast("人物已更新");
+    } catch (error) {
+      viewState.parseError = YuC.Api.describeError(error);
+      viewState.parseMessage = "";
+      YuC.UI.setParseState(viewState.parseError, true);
+      YuC.UI.toast("人物解析失败");
+    } finally {
+      viewState.parsing = false;
+      render(false);
+    }
+  }
+
+  function startStory() {
+    if (!Util.clampText(state.story.background)) {
+      YuC.UI.toast("背景故事是唯一必需的内容");
+      YuC.UI.els.backgroundInput.focus();
+      return;
+    }
+    if (!requireApi()) return;
+    if (!state.story.startedAt) state.story.startedAt = Date.now();
+    if (!state.story.createdAt) state.story.createdAt = Date.now();
+    saveNow();
+    backupNow("开始故事");
+    show("chat");
+    if (!state.messages.some(function (message) { return message.role === "assistant"; })) {
+      beginGeneration("");
+    }
+  }
+
+  function sendUserMessage(text) {
+    if (viewState.busy) return;
+    var parsed = YuC.Prompt.splitInput(Util.clampText(text, 8000));
+    var content = Util.clampText(parsed.storyText, 4000);
+    var instruction = Util.clampText(parsed.instruction, 4000);
+    if (!content && !instruction) {
+      YuC.UI.toast("写下对白或行动；也可以在 # 后填写本次生成要求");
+      YuC.UI.els.messageInput.focus();
+      return;
+    }
+    if (!requireApi()) return;
+    YuC.State.makeCheckpoint(state);
+    state.messages.push({
+      id: Util.uid("msg"),
+      role: "user",
+      content: content,
+      instruction: instruction,
+      ts: Date.now(),
+      error: false,
+      stopped: false,
+      complete: true
+    });
+    YuC.UI.clearMessageInput();
+    saveNow();
+    backupNow("用户消息");
+    render(true);
+    beginGeneration(instruction);
+  }
+
+  async function beginGeneration(instruction) {
+    if (viewState.busy) return;
+    if (!requireApi()) return;
+
+    YuC.State.makeCheckpoint(state);
+    var assistantMessage = {
+      id: Util.uid("msg"),
+      role: "assistant",
+      content: "",
+      ts: Date.now(),
+      error: false,
+      stopped: false,
+      complete: false,
+      streaming: true
+    };
+    state.messages.push(assistantMessage);
+    viewState.busy = true;
+    viewState.stopping = false;
+    viewState.memoryStatus = "";
+    viewState.abortController = new AbortController();
+    saveNow();
+    render(true);
+
+    var pendingFrame = false;
+    function updateStream() {
+      if (pendingFrame) return;
+      pendingFrame = true;
+      requestAnimationFrame(function () {
+        pendingFrame = false;
+        YuC.UI.updateStreamingMessage(assistantMessage);
+      });
+    }
+
+    try {
+      await YuC.Api.streamChat({
+        api: state.api,
+        key: viewState.apiKey,
+        messages: YuC.Prompt.buildChatMessages(state, instruction),
+        signal: viewState.abortController.signal,
+        onDelta: function (delta) {
+          assistantMessage.content += delta;
+          updateStream();
+        }
+      });
+      delete assistantMessage.streaming;
+      assistantMessage.complete = true;
+      assistantMessage.ts = Date.now();
+      state.memory.turnsSinceSummary += 1;
+      state.memory.lastError = "";
+      saveNow();
+      YuC.UI.updateStreamingMessage(assistantMessage);
+
+      if (state.memory.turnsSinceSummary >= YuC.Memory.SUMMARY_EVERY) {
+        viewState.memoryBusy = true;
+        viewState.memoryStatus = "正在整理剧情记忆…";
+        render(false);
+        var result = await YuC.Memory.maybeSummarize({
+          state: state,
+          key: viewState.apiKey,
+          signal: viewState.abortController.signal,
+          onStatus: function (status) {
+            viewState.memoryStatus = status;
+            render(false);
+          }
+        });
+        viewState.memoryBusy = false;
+        viewState.memoryStatus = result.error ? "记忆待重试" : "";
+        saveNow();
+        if (result.error) YuC.UI.toast("剧情记忆暂未更新，下段会再试");
+      }
+    } catch (error) {
+      delete assistantMessage.streaming;
+      assistantMessage.complete = !!assistantMessage.content;
+      if (error && (error.name === "AbortError" || error.type === "abort" || error.message === "已停止生成")) {
+        assistantMessage.stopped = true;
+        if (!assistantMessage.content) {
+          state.messages = state.messages.filter(function (message) {
+            return message.id !== assistantMessage.id;
+          });
+        }
+        YuC.UI.toast("已停止生成");
+      } else {
+        var message = YuC.Api.describeError(error);
+        if (assistantMessage.content) {
+          YuC.UI.toast(message);
+        } else {
+          assistantMessage.error = true;
+          assistantMessage.content = "接口没有接上：" + message;
+        }
+      }
+      viewState.memoryStatus = "";
+    } finally {
+      viewState.busy = false;
+      viewState.memoryBusy = false;
+      viewState.stopping = false;
+      viewState.abortController = null;
+      saveNow();
+      if (state.messages.some(function (message) { return message.id === assistantMessage.id; })) {
+        backupNow(assistantMessage.stopped ? "停止生成" : (assistantMessage.error ? "生成失败" : "AI消息"));
+      }
+      render(true);
+    }
+  }
+
+  function stopGeneration() {
+    if (!viewState.busy || !viewState.abortController) return;
+    viewState.stopping = true;
+    viewState.abortController.abort();
+  }
+
+  function undoLastSegment() {
+    if (viewState.busy) {
+      YuC.UI.toast("请先停止当前演出");
+      return;
+    }
+    var checkpoint = state.checkpoints.pop();
+    if (!checkpoint) {
+      YuC.UI.toast("没有可以撤销的段落");
+      return;
+    }
+    YuC.State.restoreCheckpoint(state, checkpoint);
+    viewState.memoryStatus = "";
+    saveNow();
+    backupNow("撤销消息");
+    render(true);
+    YuC.UI.toast("已撤回最后一条消息，并回退对应记忆");
+  }
+
+  function saveCast(data, id) {
+    var record = normalizeCastRecord(data, id);
+    if (id) {
+      var index = state.cast.findIndex(function (character) {
+        return character.id === id;
+      });
+      if (index >= 0) state.cast[index] = record;
+    } else {
+      var duplicate = state.cast.some(function (character) {
+        return character.name.toLowerCase() === record.name.toLowerCase();
+      });
+      if (duplicate) {
+        YuC.UI.toast("已经存在同名人物");
+        return;
+      }
+      state.cast.push(record);
+    }
+    saveNow();
+    backupNow("修改人物");
+    YuC.UI.closeCastEditor();
+    render(false);
+    YuC.UI.toast("人物资料已保存");
+  }
+
+  function deleteCast(id) {
+    var character = findCast(id);
+    if (!character) return;
+    if (!root.confirm("删除“" + character.name + "”？原始背景不会改变。")) return;
+    state.cast = state.cast.filter(function (item) {
+      return item.id !== id;
+    });
+    saveNow();
+    backupNow("删除人物");
+    YuC.UI.closeCastEditor();
+    render(false);
+    YuC.UI.toast("人物已删除");
+  }
+
+  bindHandlers();
+  YuC.UI.showView(viewState.view);
+  render(false);
+  if (state.story.background || state.messages.length) backupNow("打开应用");
+  if (YuC.Store.source() === "embedded") YuC.UI.toast("已从 HTML 内置存档恢复记录");
+
+  YuC.App = {
+    state: state,
+    viewState: viewState,
+    saveNow: saveNow,
+    render: render
+  };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+  </script>
+</body>
+</html>
