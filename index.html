@@ -774,6 +774,7 @@ select:focus-visible,
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
+  overflow-anchor: none;
   -webkit-overflow-scrolling: touch;
   padding: 22px 18px 28px;
 }
@@ -784,8 +785,6 @@ select:focus-visible,
   gap: 9px;
   max-width: 86%;
   margin: 0 0 20px;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 180px;
   animation: message-in .2s ease both;
 }
 
@@ -4909,6 +4908,8 @@ select:focus-visible,
   var currentActionMessageId = "";
   var lastCast = [];
   var lastUser = {};
+  var autoFollow = true;
+  var scrollObserver = null;
   var toastTimer = 0;
 
   function init(nextHandlers) {
@@ -5107,6 +5108,9 @@ select:focus-visible,
       if (!target) return;
       if (handlers.onOpenCastItem) handlers.onOpenCastItem(target.getAttribute("data-cast-id"));
     });
+    els.messageList.addEventListener("scroll", function () {
+      autoFollow = els.messageList.scrollHeight - els.messageList.scrollTop - els.messageList.clientHeight < 140;
+    }, { passive: true });
 
     els.backToSetupButton.addEventListener("click", function () {
       if (handlers.onBackToSetup) handlers.onBackToSetup();
@@ -5527,6 +5531,7 @@ select:focus-visible,
     var list = els.messageList;
     lastUser = user || {};
     var shouldStick = list.scrollHeight - list.scrollTop - list.clientHeight < 180;
+    if (viewState && viewState.forceBottom) autoFollow = true;
     list.replaceChildren();
     if (!messages || !messages.length) {
       var empty = document.createElement("div");
@@ -5539,6 +5544,7 @@ select:focus-visible,
         : "点“继续”让旁白开场；也可以写“对白或行动 # 本次要求”。";
       empty.append(strong, copy);
       list.appendChild(empty);
+      watchScrollTail();
       return;
     }
     messages.forEach(function (message) {
@@ -5576,7 +5582,11 @@ select:focus-visible,
       row.appendChild(wrap);
       list.appendChild(row);
     });
-    if (viewState && viewState.forceBottom || shouldStick) scrollToBottom();
+    if (autoFollow || shouldStick) {
+      autoFollow = true;
+      scrollToBottom();
+    }
+    watchScrollTail();
   }
 
   function renderAssistantContent(row, message, cast, user) {
@@ -5623,7 +5633,7 @@ select:focus-visible,
       var bubble = row.querySelector(".message-bubble");
       if (bubble) bubble.textContent = message.content || "";
     }
-    scrollToBottom();
+    if (autoFollow) scrollToBottom();
   }
 
   function cssEscape(value) {
@@ -5632,9 +5642,24 @@ select:focus-visible,
   }
 
   function scrollToBottom() {
+    var list = els.messageList;
+    list.scrollTop = list.scrollHeight;
     requestAnimationFrame(function () {
-      els.messageList.scrollTop = els.messageList.scrollHeight;
+      if (autoFollow) list.scrollTop = list.scrollHeight;
     });
+  }
+
+  function watchScrollTail() {
+    if (!root.ResizeObserver || !els.messageList) return;
+    if (!scrollObserver) {
+      scrollObserver = new ResizeObserver(function () {
+        if (autoFollow) els.messageList.scrollTop = els.messageList.scrollHeight;
+      });
+    }
+    scrollObserver.disconnect();
+    scrollObserver.observe(els.messageList);
+    var tail = els.messageList.lastElementChild;
+    if (tail) scrollObserver.observe(tail);
   }
 
   function renderMemoryStatus(state, viewState) {
@@ -6013,7 +6038,8 @@ select:focus-visible,
     closeVariants: closeVariants,
     closeDialog: closeDialog,
     setPickerAvatar: setPickerAvatar,
-    autoGrow: autoGrow
+    autoGrow: autoGrow,
+    isAutoFollowing: function () { return autoFollow; }
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 
@@ -7464,7 +7490,7 @@ select:focus-visible,
       if (state.messages.some(function (message) { return message.id === assistantMessage.id; })) {
         backupNow(assistantMessage.stopped ? "停止生成" : (assistantMessage.error ? "生成失败" : "AI消息"));
       }
-      render(true);
+      render(YuC.UI.isAutoFollowing());
       if (options && options.skipCheckpoint && !assistantMessage.error) {
         YuC.UI.toast("已从这里重新生成，可点顶部“撤销”恢复");
       }
