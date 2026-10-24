@@ -1911,8 +1911,8 @@ select:focus-visible,
         <div class="composer-note">你的输入是既定行动；AI 只演世界与 NPC。用 <strong>#</strong> 添加本次生成要求</div>
         <div class="composer-inner">
           <button class="continue-button" id="continueButton" type="button" aria-label="继续">
-            <span aria-hidden="true">▶</span>
-            <span>继续</span>
+            <span id="continueButtonIcon" aria-hidden="true">▶</span>
+            <span id="continueButtonLabel">继续</span>
           </button>
           <textarea id="messageInput" rows="1" placeholder="对白或行动 # 本次要求，例如：我推门进去 # 重点写顾青的反应"></textarea>
           <button class="send-button" id="sendButton" type="button">发送</button>
@@ -2177,6 +2177,7 @@ select:focus-visible,
         <div class="modal-actions spread">
           <button class="quiet-button" id="previousBookChapterButton" type="button">上一章</button>
           <button class="quiet-button" id="analyzeBookChapterButton" type="button">解析/重新解析本章</button>
+          <button class="quiet-button" id="toggleBookChapterEndButton" type="button">标记本章结束</button>
           <button class="accent-button" id="advanceBookChapterButton" type="button">进入下一章</button>
         </div>
         <p class="modal-status" id="bookDialogStatus" aria-live="polite"></p>
@@ -2693,7 +2694,10 @@ select:focus-visible,
         currentChapter: state.book.currentChapter,
         startChapter: state.book.startChapter,
         maxVisitedChapter: state.book.maxVisitedChapter,
-        interventions: state.book.interventions
+        interventions: state.book.interventions,
+        completedChapters: state.book.chapters.filter(function (chapter) {
+          return chapter.completed;
+        }).map(function (chapter) { return chapter.index; })
       };
     }
     if (options && options.captureMessages) checkpoint.messages = clone(state.messages);
@@ -2732,6 +2736,10 @@ select:focus-visible,
         ? checkpoint.book.currentChapter
         : checkpoint.book.maxVisitedChapter;
       state.book.interventions = checkpoint.book.interventions || 0;
+      var completed = checkpoint.book.completedChapters || [];
+      state.book.chapters.forEach(function (chapter) {
+        chapter.completed = completed.indexOf(chapter.index) >= 0;
+      });
     }
     var summarizedCount = Math.max(0, Number(state.memory.lastSummarizedMessageCount) || 0);
     state.memory.lastSummarizedMessageCount = state.memory.summary
@@ -3613,6 +3621,7 @@ select:focus-visible,
   var MAX_SOURCE_CHARS = 2000000;
   var MAX_CHAPTERS = 500;
   var MAX_SCENES = 8;
+  var CHAPTER_END_MARKER = "<<<YU_C_CHAPTER_END>>>";
 
   function defaultBook() {
     return {
@@ -3662,6 +3671,7 @@ select:focus-visible,
       end: end,
       charCount: Math.max(0, Number(item.charCount) || (end - start)),
       analyzed: !!item.analyzed,
+      completed: !!item.completed,
       summary: asText(item.summary, 1800)
     };
   }
@@ -4040,7 +4050,27 @@ select:focus-visible,
       });
     }
     lines.push("根据最近对话判断剧情已经走到哪一场，只推进一个自然节拍；不得跳过尚未演出的重要场景。若本章已经自然结束，停在过渡处，不擅自把下一章提前演完。");
+    lines.push("当最后一个计划场景已经完成、并给读者留下自然的章末停顿后，只在回复最末尾另起一行输出隐藏标记 " + CHAPTER_END_MARKER + "。没有真正到达章末时绝不输出这个标记，标记之后不要再写任何正文。");
     return lines.join("\n");
+  }
+
+  function isCurrentChapterComplete(book) {
+    if (!book || !book.enabled) return false;
+    var chapter = book.chapters[Math.max(0, Number(book.currentChapter) || 0)];
+    return !!(chapter && chapter.completed);
+  }
+
+  function extractChapterEnd(raw) {
+    var text = String(raw || "");
+    var index = text.indexOf(CHAPTER_END_MARKER);
+    if (index >= 0) {
+      return { text: text.slice(0, index).replace(/\s+$/, ""), found: true };
+    }
+    var partial = text.lastIndexOf("<<<");
+    if (partial >= 0 && CHAPTER_END_MARKER.indexOf(text.slice(partial)) === 0) {
+      return { text: text.slice(0, partial).replace(/\s+$/, ""), found: false };
+    }
+    return { text: text, found: false };
   }
 
   function statusText(book) {
@@ -4049,13 +4079,15 @@ select:focus-visible,
     var chapter = book.chapters[index];
     var plan = planForChapter(book, index);
     return "第" + (index + 1) + "/" + book.chapters.length + "章 · " +
-      (chapter ? chapter.title : "未命名") + " · " + (plan ? "已解析" : "待解析");
+      (chapter ? chapter.title : "未命名") + " · " +
+      (chapter && chapter.completed ? "本章已结束" : plan ? "已解析" : "待解析");
   }
 
   YuC.Book = {
     MAX_SOURCE_CHARS: MAX_SOURCE_CHARS,
     MAX_CHAPTERS: MAX_CHAPTERS,
     MAX_SCENES: MAX_SCENES,
+    CHAPTER_END_MARKER: CHAPTER_END_MARKER,
     defaultBook: defaultBook,
     sanitizeBook: sanitizeBook,
     splitChapters: splitChapters,
@@ -4067,6 +4099,8 @@ select:focus-visible,
     buildChapterAnalysisMessages: buildChapterAnalysisMessages,
     parseChapterAnalysis: parseChapterAnalysis,
     promptContext: promptContext,
+    isCurrentChapterComplete: isCurrentChapterComplete,
+    extractChapterEnd: extractChapterEnd,
     statusText: statusText,
     modeRule: modeRule,
     knowledgeRule: knowledgeRule,
@@ -4940,7 +4974,7 @@ select:focus-visible,
       "openStoriesButton", "openChatStoriesButton", "stylePresetGrid", "customStyleField",
       "customStyleInput", "detailLevelInput", "detailToggleGrid",
       "castStrip", "messageList", "continueButton", "messageInput", "sendButton",
-      "stopButton", "settingsDialog", "connectionModeInput", "endpointInput",
+      "continueButtonIcon", "continueButtonLabel", "stopButton", "settingsDialog", "connectionModeInput", "endpointInput",
       "relayEndpointInput", "relayField", "apiKeyInput", "rememberKeyInput", "modelInput",
       "replyLengthInput", "temperaturePresetInput", "testConnectionButton",
       "apiProfileSelect", "saveApiProfileButton", "deleteApiProfileButton",
@@ -4957,7 +4991,7 @@ select:focus-visible,
       "bookDialog", "closeBookButton", "bookDialogTitle", "bookDialogChapter",
       "bookDialogMeta", "bookDialogModeInput", "bookDialogKnowledgeInput",
       "bookDialogSummary", "bookDialogScenes", "analyzeBookChapterButton",
-      "previousBookChapterButton", "advanceBookChapterButton", "bookDialogStatus",
+      "previousBookChapterButton", "toggleBookChapterEndButton", "advanceBookChapterButton", "bookDialogStatus",
       "storiesDialog", "closeStoriesButton",
       "newStoryButton", "storyList", "messageActionDialog", "closeMessageActionButton",
       "messageActionPreview", "messageActionInstruction", "regenerateFromMessageButton",
@@ -5047,6 +5081,9 @@ select:focus-visible,
     });
     els.previousBookChapterButton.addEventListener("click", function () {
       if (handlers.onPreviousBookChapter) handlers.onPreviousBookChapter();
+    });
+    els.toggleBookChapterEndButton.addEventListener("click", function () {
+      if (handlers.onToggleBookChapterEnd) handlers.onToggleBookChapterEnd();
     });
     els.advanceBookChapterButton.addEventListener("click", function () {
       if (handlers.onAdvanceBookChapter) handlers.onAdvanceBookChapter();
@@ -5510,7 +5547,25 @@ select:focus-visible,
     els.undoButton.disabled = !(state.checkpoints && state.checkpoints.length) ||
       !!viewState.busy || !!viewState.bookParsing;
     setBusy(!!viewState.busy);
+    renderContinueAction(state, viewState);
     setMemoryDialog(state);
+  }
+
+  function renderContinueAction(state, viewState) {
+    var completed = YuC.Book.isCurrentChapterComplete(state.book);
+    var lastChapter = completed && state.book &&
+      state.book.currentChapter >= state.book.chapters.length - 1;
+    if (lastChapter) {
+      els.continueButtonIcon.textContent = "■";
+      els.continueButtonLabel.textContent = "已完结";
+      els.continueButton.disabled = true;
+      els.continueButton.setAttribute("aria-label", "本书已完结");
+      return;
+    }
+    els.continueButtonIcon.textContent = completed ? "→" : "▶";
+    els.continueButtonLabel.textContent = completed ? "下一章" : "继续";
+    els.continueButton.disabled = !!(viewState && viewState.busy);
+    els.continueButton.setAttribute("aria-label", completed ? "进入下一章" : "继续");
   }
 
   function renderBookProgress(state) {
@@ -5718,7 +5773,8 @@ select:focus-visible,
     els.bookDialogMeta.textContent = book.enabled
       ? YuC.Book.modeLabel(book.mode) +
         " · " + (book.knowledge === "reader" ? "读者重游" : "模拟初读") +
-        " · 玩家介入 " + book.interventions + " 次"
+        " · 玩家介入 " + book.interventions + " 次" +
+        (chapter && chapter.completed ? " · 本章已结束" : "")
       : "请先在设置页导入整本小说";
     setValue(els.bookDialogModeInput, book.mode);
     setValue(els.bookDialogKnowledgeInput, book.knowledge);
@@ -5741,6 +5797,10 @@ select:focus-visible,
     var parsing = !!(viewState && viewState.bookParsing);
     els.analyzeBookChapterButton.disabled = parsing || !book.chapters.length;
     els.previousBookChapterButton.disabled = parsing || index <= 0;
+    els.toggleBookChapterEndButton.textContent = chapter && chapter.completed
+      ? "取消结束标记"
+      : "标记本章结束";
+    els.toggleBookChapterEndButton.disabled = parsing || !chapter;
     els.advanceBookChapterButton.disabled = parsing || index >= book.chapters.length - 1;
     els.bookDialogStatus.textContent = parsing
       ? "正在解析当前章节…"
@@ -6324,6 +6384,7 @@ select:focus-visible,
       onAnalyzeBookChapter: analyzeBookCurrentChapter,
       onPreviousBookChapter: previousBookChapter,
       onAdvanceBookChapter: advanceBookChapter,
+      onToggleBookChapterEnd: toggleBookChapterEnd,
       onTitleChange: function (value) {
         state.story.title = Util.clampText(value, 60);
         if (state.book && state.book.enabled) state.book.title = state.story.title;
@@ -6394,7 +6455,8 @@ select:focus-visible,
         show("setup");
       },
       onContinue: function () {
-        beginGeneration("");
+        if (YuC.Book.isCurrentChapterComplete(state.book)) advanceBookChapter();
+        else beginGeneration("");
       },
       onSend: function (text) {
         sendUserMessage(text);
@@ -6567,6 +6629,19 @@ select:focus-visible,
     }
     viewState.bookError = "";
     YuC.UI.openBookDialog(state, viewState);
+  }
+
+  function toggleBookChapterEnd() {
+    if (!state.book || !state.book.enabled || viewState.busy || viewState.bookParsing) return;
+    var chapter = state.book.chapters[state.book.currentChapter];
+    if (!chapter) return;
+    chapter.completed = !chapter.completed;
+    viewState.bookError = "";
+    saveNow();
+    backupNow(chapter.completed ? "标记章节结束" : "取消章节结束");
+    render(false);
+    YuC.UI.renderBookDialog(state, viewState);
+    YuC.UI.setBookDialogStatus(chapter.completed ? "本章已标记结束。" : "已取消本章结束标记。");
   }
 
   function chapterInterventions(index) {
@@ -7445,6 +7520,7 @@ select:focus-visible,
     render(true);
 
     var pendingFrame = false;
+    var streamedRaw = "";
     function updateStream() {
       if (pendingFrame) return;
       pendingFrame = true;
@@ -7461,10 +7537,22 @@ select:focus-visible,
         messages: YuC.Prompt.buildChatMessages(state, instruction),
         signal: viewState.abortController.signal,
         onDelta: function (delta) {
-          assistantMessage.content += delta;
+          streamedRaw += delta;
+          var control = state.book && state.book.enabled
+            ? YuC.Book.extractChapterEnd(streamedRaw)
+            : { text: streamedRaw, found: false };
+          assistantMessage.content = control.text;
           updateStream();
         }
       });
+      var finalControl = state.book && state.book.enabled
+        ? YuC.Book.extractChapterEnd(streamedRaw)
+        : { text: streamedRaw, found: false };
+      assistantMessage.content = finalControl.text;
+      if (finalControl.found) {
+        var chapter = state.book.chapters[state.book.currentChapter];
+        if (chapter) chapter.completed = true;
+      }
       delete assistantMessage.streaming;
       assistantMessage.complete = true;
       assistantMessage.ts = Date.now();
@@ -7474,6 +7562,7 @@ select:focus-visible,
       YuC.UI.updateStreamingMessage(assistantMessage);
 
       maybeStartBackgroundMemory();
+      if (finalControl.found) YuC.UI.toast("本章已结束，可以进入下一章");
     } catch (error) {
       delete assistantMessage.streaming;
       assistantMessage.complete = !!assistantMessage.content;
