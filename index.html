@@ -2477,10 +2477,10 @@ select:focus-visible,
     base.memory.openThreads = clampText(memory.openThreads, 1200);
     base.memory.summaryCount = Math.max(0, Number(memory.summaryCount) || 0);
     base.memory.turnsSinceSummary = Math.max(0, Number(memory.turnsSinceSummary) || 0);
-    base.memory.lastSummarizedMessageCount = Math.min(
-      base.messages.length,
-      Math.max(0, Number(memory.lastSummarizedMessageCount) || 0)
-    );
+    var summarizedCount = Math.max(0, Number(memory.lastSummarizedMessageCount) || 0);
+    base.memory.lastSummarizedMessageCount = base.memory.summary
+      ? Math.min(base.messages.length, summarizedCount)
+      : 0;
     base.memory.lastAttemptAt = Math.max(0, Number(memory.lastAttemptAt) || 0);
     base.memory.lastError = clampText(memory.lastError, 1000);
     base.memory.apiProfileId = clampText(memory.apiProfileId, 80);
@@ -2732,6 +2732,15 @@ select:focus-visible,
         ? checkpoint.book.currentChapter
         : checkpoint.book.maxVisitedChapter;
       state.book.interventions = checkpoint.book.interventions || 0;
+    }
+    var summarizedCount = Math.max(0, Number(state.memory.lastSummarizedMessageCount) || 0);
+    state.memory.lastSummarizedMessageCount = state.memory.summary
+      ? Math.min(state.messages.length, summarizedCount)
+      : 0;
+    if (state.book && state.book.enabled) {
+      state.messages.forEach(function (message) {
+        if (message.chapterIndex == null) message.chapterIndex = state.book.currentChapter;
+      });
     }
     return true;
   }
@@ -6730,7 +6739,7 @@ select:focus-visible,
       state.memory.openThreads = "";
       state.memory.summaryCount = 0;
       state.memory.turnsSinceSummary = 0;
-      state.memory.lastSummarizedMessageCount = index;
+      state.memory.lastSummarizedMessageCount = 0;
       state.memory.lastError = "";
       state.cast.forEach(function (character) {
         character.currentState = "";
