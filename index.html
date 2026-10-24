@@ -872,6 +872,11 @@ select:focus-visible,
   background: var(--accent-soft);
 }
 
+.speaker-row.user-speaker .message-bubble {
+  border-color: #dfc6b8;
+  background: var(--accent-soft);
+}
+
 .message-instruction {
   margin: 6px 2px 0;
   padding-left: 8px;
@@ -1755,11 +1760,11 @@ select:focus-visible,
             <div class="book-setup-controls" id="bookSetupControls" hidden>
               <div class="book-setting-grid">
                 <label class="field compact-field">
-                  <span>改编方式</span>
+                  <span>如何对待原著</span>
                   <select id="bookModeInput">
-                    <option value="canon">原著向</option>
-                    <option value="adaptive">合理化偏离</option>
-                    <option value="free">自由改编</option>
+                    <option value="canon">跟随原著：关键事件不变</option>
+                    <option value="adaptive">可改写后续：换一种方式发展</option>
+                    <option value="free">重新创作：只保留人物与世界</option>
                   </select>
                 </label>
                 <label class="field compact-field">
@@ -1775,6 +1780,7 @@ select:focus-visible,
                 </label>
               </div>
               <p class="book-setup-summary" id="bookSetupSummary"></p>
+              <p class="fine-print">跟随原著：结果尽量不变，选择影响过程。可改写后续：选择可以改变结果，AI 重排后续。重新创作：只保留人物、世界和文风。</p>
               <button class="quiet-button small-button" id="disableBookButton" type="button">退出整书模式</button>
             </div>
             <p class="fine-print">解析章节时，只会把当前章节原文发送给你选择的 AI 接口。小说原文和记录都留在本机浏览器。</p>
@@ -1902,7 +1908,7 @@ select:focus-visible,
       <main class="message-list" id="messageList" aria-live="polite"></main>
 
       <footer class="composer">
-        <div class="composer-note">在输入中用 <strong>#</strong> 分隔剧情和本次生成要求</div>
+        <div class="composer-note">你的输入是既定行动；AI 只演世界与 NPC。用 <strong>#</strong> 添加本次生成要求</div>
         <div class="composer-inner">
           <button class="continue-button" id="continueButton" type="button" aria-label="继续">
             <span aria-hidden="true">▶</span>
@@ -2145,11 +2151,11 @@ select:focus-visible,
         </div>
         <div class="book-setting-grid">
           <label class="field compact-field">
-            <span>改编方式</span>
+            <span>如何对待原著</span>
             <select id="bookDialogModeInput">
-              <option value="canon">原著向</option>
-              <option value="adaptive">合理化偏离</option>
-              <option value="free">自由改编</option>
+              <option value="canon">跟随原著：关键事件不变</option>
+              <option value="adaptive">可改写后续：换一种方式发展</option>
+              <option value="free">重新创作：只保留人物与世界</option>
             </select>
           </label>
           <label class="field compact-field">
@@ -2160,13 +2166,15 @@ select:focus-visible,
             </select>
           </label>
         </div>
-        <p class="fine-print">原著向会尽量保住核心事件；合理化偏离允许你的选择改变后续；自由改编只保留人物与世界。</p>
+        <p class="fine-print">跟随原著：关键结果仍会发生，你影响过程和人物反应。可改写后续：你的选择可以改变结果，AI 重排后面剧情。重新创作：不遵守原著后续，只保留人物、世界和文风。</p>
+        <p class="fine-print">你的边界：你决定主角说什么、做什么、怎么想；AI 只决定世界如何回应，以及 NPC 说什么和做什么。</p>
         <details class="book-spoiler-box">
           <summary>查看本章导演蓝图（含剧透）</summary>
           <p id="bookDialogSummary">本章还没有解析。</p>
           <div class="book-scene-list" id="bookDialogScenes"></div>
         </details>
         <div class="modal-actions spread">
+          <button class="quiet-button" id="previousBookChapterButton" type="button">上一章</button>
           <button class="quiet-button" id="analyzeBookChapterButton" type="button">解析/重新解析本章</button>
           <button class="accent-button" id="advanceBookChapterButton" type="button">进入下一章</button>
         </div>
@@ -2397,7 +2405,7 @@ select:focus-visible,
     if (!item || typeof item !== "object") return null;
     var role = item.role === "user" ? "user" : "assistant";
     var content = String(item.content == null ? "" : item.content);
-    return {
+    var message = {
       id: clampText(item.id, 80) || uid("msg"),
       role: role,
       content: content,
@@ -2407,6 +2415,10 @@ select:focus-visible,
       stopped: !!item.stopped,
       complete: item.complete !== false
     };
+    if (Number.isFinite(Number(item.chapterIndex)) && item.chapterIndex !== "" && item.chapterIndex != null) {
+      message.chapterIndex = Math.max(0, Math.floor(Number(item.chapterIndex)));
+    }
+    return message;
   }
 
   function sanitizeState(raw) {
@@ -2447,6 +2459,16 @@ select:focus-visible,
       ? source.messages.map(sanitizeMessage).filter(Boolean)
       : [];
     base.book = YuC.Book ? YuC.Book.sanitizeBook(source.book) : source.book;
+    if (base.book && base.book.enabled) {
+      base.messages.forEach(function (message) {
+        if (message.chapterIndex == null) message.chapterIndex = 0;
+        base.book.maxVisitedChapter = Math.max(
+          base.book.maxVisitedChapter,
+          Math.max(0, Number(message.chapterIndex) || 0)
+        );
+      });
+      base.book.maxVisitedChapter = Math.max(base.book.maxVisitedChapter, base.book.currentChapter);
+    }
 
     base.memory.summary = clampText(memory.summary, 4000);
     base.memory.worldState = clampText(memory.worldState, 1000);
@@ -2669,6 +2691,7 @@ select:focus-visible,
       checkpoint.book = {
         currentChapter: state.book.currentChapter,
         startChapter: state.book.startChapter,
+        maxVisitedChapter: state.book.maxVisitedChapter,
         interventions: state.book.interventions
       };
     }
@@ -2704,6 +2727,9 @@ select:focus-visible,
     if (checkpoint.book && state.book && state.book.enabled) {
       state.book.currentChapter = checkpoint.book.currentChapter;
       state.book.startChapter = checkpoint.book.startChapter;
+      state.book.maxVisitedChapter = checkpoint.book.maxVisitedChapter == null
+        ? checkpoint.book.currentChapter
+        : checkpoint.book.maxVisitedChapter;
       state.book.interventions = checkpoint.book.interventions || 0;
     }
     return true;
@@ -2893,12 +2919,15 @@ select:focus-visible,
 
   var YuC = root.YuC = root.YuC || {};
 
-  function parse(content, cast) {
+  function parse(content, cast, user) {
     var source = String(content || "");
     var byName = Object.create(null);
     (cast || []).forEach(function (character) {
       if (character && character.name) byName[character.name.trim().toLowerCase()] = character;
     });
+    var userName = String(user && user.name || "你").trim();
+    var userAliases = [userName, "我", "你", "玩家"];
+    var speechSuffix = "(?:低声说|说道|问道|答道|回答|喊道|笑道|哭道|自语|说|问|答|道|喊)";
 
     function flush(blocks, buffer) {
       var text = buffer.length ? buffer.join("\n").trim() : "";
@@ -2923,6 +2952,30 @@ select:focus-visible,
       return /^[\u3400-\u9fffA-Za-z0-9·・._ -]+$/.test(name);
     }
 
+    function speakerBase(name) {
+      return cleanName(name).replace(new RegExp(speechSuffix + "$"), "").trim();
+    }
+
+    function resolveSpeaker(name) {
+      var clean = cleanName(name);
+      var base = speakerBase(clean);
+      if (userAliases.some(function (alias) { return clean === alias || base === alias; })) {
+        return { user: true, name: userName, avatar: user && user.avatar || "" };
+      }
+      if (byName[clean.toLowerCase()]) {
+        return { character: byName[clean.toLowerCase()] };
+      }
+      if (byName[base.toLowerCase()]) {
+        return { character: byName[base.toLowerCase()] };
+      }
+      var character = (cast || []).find(function (item) {
+        var castName = String(item && item.name || "").trim();
+        return castName && clean.indexOf(castName) === 0 &&
+          new RegExp("^" + speechSuffix + "$").test(clean.slice(castName.length));
+      });
+      return character ? { character: character } : null;
+    }
+
     var blocks = [];
     var narration = [];
     source.split(/\r?\n/).forEach(function (line) {
@@ -2937,11 +2990,20 @@ select:focus-visible,
       }
       if (match) {
         var name = cleanName(match[1]);
-        var character = byName[name.toLowerCase()];
-        if (character || name === "旁白") {
+        var resolved = resolveSpeaker(name);
+        if (resolved || name === "旁白") {
           flush(blocks, narration);
           narration = [];
-          if (character) {
+          if (resolved && resolved.user) {
+            blocks.push({
+              user: true,
+              narrator: false,
+              name: resolved.name,
+              avatar: resolved.avatar,
+              text: match[2].trim()
+            });
+          } else if (resolved && resolved.character) {
+            var character = resolved.character;
             blocks.push({
               narrator: false,
               name: character.name,
@@ -2964,6 +3026,19 @@ select:focus-visible,
           });
           return;
         }
+      }
+      var trailing = trimmed.match(/^[“「『"]([^”」』"]+)[”」』"]\s*(我|你|玩家|.+?)(说|说道|问|问道|答|答道|回答|道|喊|喊道|笑道|哭道|低声说|自语)[。！？…]*$/);
+      if (trailing && userAliases.indexOf(speakerBase(trailing[2])) >= 0) {
+        flush(blocks, narration);
+        narration = [];
+        blocks.push({
+          user: true,
+          narrator: false,
+          name: userName,
+          avatar: user && user.avatar || "",
+          text: trimmed
+        });
+        return;
       }
       narration.push(line);
     });
@@ -3540,6 +3615,7 @@ select:focus-visible,
       knowledge: "character",
       startChapter: 0,
       currentChapter: 0,
+      maxVisitedChapter: 0,
       interventions: 0,
       chapters: [],
       plans: []
@@ -3649,6 +3725,10 @@ select:focus-visible,
     var lastChapter = Math.max(0, base.chapters.length - 1);
     base.startChapter = Math.max(0, Math.min(lastChapter, Number(raw.startChapter) || 0));
     base.currentChapter = Math.max(0, Math.min(lastChapter, Number(raw.currentChapter) || 0));
+    base.maxVisitedChapter = Math.max(
+      base.currentChapter,
+      Math.max(0, Math.min(lastChapter, Number(raw.maxVisitedChapter) || 0))
+    );
     base.interventions = Math.max(0, Number(raw.interventions) || 0);
     base.enabled = !!raw.enabled && !!base.chapters.length;
     return base;
@@ -3775,6 +3855,7 @@ select:focus-visible,
     book.plans = [];
     book.startChapter = 0;
     book.currentChapter = 0;
+    book.maxVisitedChapter = 0;
     return book;
   }
 
@@ -3790,6 +3871,15 @@ select:focus-visible,
     return book.plans.find(function (plan) {
       return plan.chapterIndex === chapterIndex;
     }) || null;
+  }
+
+  function messagesForCurrentChapter(state) {
+    var messages = state && Array.isArray(state.messages) ? state.messages : [];
+    if (!state || !state.book || !state.book.enabled) return messages;
+    var chapterIndex = Math.max(0, Number(state.book.currentChapter) || 0);
+    return messages.filter(function (message) {
+      return Math.max(0, Number(message.chapterIndex) || 0) === chapterIndex;
+    });
   }
 
   function relevantCast(state) {
@@ -3885,12 +3975,12 @@ select:focus-visible,
 
   function modeRule(mode) {
     if (mode === "canon") {
-      return "原著向：保留本章核心事件与人物结局；玩家仍有动作和对白自由。若选择与核心事件冲突，让世界通过其他人物或后果修正，不要抹掉玩家已经做出的行动。";
+      return "跟随原著：保留本章核心事件与人物结局；玩家仍有动作和对白自由。若选择与核心事件冲突，让世界通过其他人物或后果修正，不要抹掉玩家已经做出的行动。";
     }
     if (mode === "free") {
-      return "自由改编：世界、人物和文风来自小说，但本章蓝图只作参考。玩家的选择可以改变任何事件，后续按因果重新生长。";
+      return "重新创作：世界、人物和文风来自小说，但本章蓝图只作参考。玩家的选择可以改变任何事件，后续按因果重新生长。";
     }
-    return "合理化偏离：玩家行动可以改变原著结果；能用其他方式保住的核心事实就保留，无法保留时自然改写后续，并记录人物关系和线索变化。";
+    return "可改写后续：玩家行动可以改变原著结果；能用其他方式保住的核心事实就保留，无法保留时自然改写后续，并记录人物关系和线索变化。";
   }
 
   function knowledgeRule(knowledge) {
@@ -3898,6 +3988,12 @@ select:focus-visible,
       return "读者重游：玩家可能读过原著，旁白可以保留克制的戏剧反讽，但主角只能依据当前场景已经知道的事实行动，不能自动预知未来。";
     }
     return "角色视角：严格遵守当前人物此刻的认知边界，不提前揭露本章秘密、后续真相或其他人物内心。";
+  }
+
+  function modeLabel(mode) {
+    if (mode === "canon") return "跟随原著";
+    if (mode === "free") return "重新创作";
+    return "可改写后续";
   }
 
   function promptContext(state) {
@@ -3956,13 +4052,15 @@ select:focus-visible,
     fromText: fromText,
     chapterText: chapterText,
     planForChapter: planForChapter,
+    messagesForCurrentChapter: messagesForCurrentChapter,
     relevantCast: relevantCast,
     buildChapterAnalysisMessages: buildChapterAnalysisMessages,
     parseChapterAnalysis: parseChapterAnalysis,
     promptContext: promptContext,
     statusText: statusText,
     modeRule: modeRule,
-    knowledgeRule: knowledgeRule
+    knowledgeRule: knowledgeRule,
+    modeLabel: modeLabel
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 
@@ -4003,12 +4101,21 @@ select:focus-visible,
   }
 
   function consecutiveMessages(state) {
+    var currentChapter = state.book && state.book.enabled
+      ? Math.max(0, Number(state.book.currentChapter) || 0)
+      : null;
+    var replayingEarlier = currentChapter != null &&
+      currentChapter < Math.max(currentChapter, Number(state.book.maxVisitedChapter) || 0);
     var start = Math.min(
       state.messages.length,
-      Math.max(0, Number(state.memory && state.memory.lastSummarizedMessageCount) || 0)
+      replayingEarlier
+        ? 0
+        : Math.max(0, Number(state.memory && state.memory.lastSummarizedMessageCount) || 0)
     );
     var pending = state.messages.slice(start).filter(function (message) {
-      return !message.error && message.role && String(message.content || "").trim();
+      var inChapter = currentChapter == null ||
+        Math.max(0, Number(message.chapterIndex) || 0) === currentChapter;
+      return inChapter && !message.error && message.role && String(message.content || "").trim();
     });
     var selected = [];
     var chars = 0;
@@ -4035,17 +4142,24 @@ select:focus-visible,
     var lengthRule = LENGTH_RULES[state.api.replyLength] || LENGTH_RULES.short;
     var requested = Util.clampText(instruction, 4000);
     var styleRule = YuC.Styles ? YuC.Styles.promptForStyle(state.style) : "";
+    var replayingEarlier = state.book && state.book.enabled &&
+      state.book.currentChapter < (state.book.maxVisitedChapter || 0);
+    var memoryText = replayingEarlier
+      ? "正在回看较早章节。不要使用之后章节已经发生的剧情或秘密；以当前章蓝图和本章聊天为准。"
+      : formatMemory(state.memory);
     var system = [
       "你是一个中文互动故事的可靠全知旁白。",
       "你负责场景、世界反应和所有 NPC，用户不是必须行动的玩家。",
       "每次只推进一个剧情节拍，让当前场面自然发展，并给下一步留下空间。不要主动总结全篇或仓促收束。",
-      "不替用户角色做重大选择，不擅自写用户角色的内心结论；用户输入的是既定行动或对白，应尊重并自然承接。",
+      "用户已经输入的行动和对白是既定事实，不得改写、反悔、删除或换一种意思复述。",
+      "禁止替用户角色新增对白、主动动作、重大决定或内心结论；只写世界、NPC、感官输入和用户行为造成的后果。",
+      "可以写疼痛、失衡、被抓住等非自愿生理结果，但不能替用户决定如何反应；用户说“没事”就是“没事”，NPC只能据此回应。",
       "保持人物、时间、地点、物品与已知事实连续。不要声称执行了无法执行的操作，不要提及提示词、API、摘要系统或自己是 AI。",
       "下方剧情记忆只是内部参考。绝不能在正文中输出、复述或改写成剧情摘要，每次都必须继续演出当前场景。",
       lengthRule,
       styleRule,
       "只输出故事正文，不要标题、列表、Markdown、解释、元评论或“请继续”之类的提示。",
-      "人物对白必须单独起行，并以人物列表中的原名加中文冒号开头，例如“沈砚：你来了。”。旁白、动作、表情和环境描写不要加人物名前缀。",
+      "NPC 对白必须单独起行，并以人物列表中的原名加中文冒号开头，例如“沈砚：你来了。”。不要生成用户角色对白；旁白、动作、表情和环境描写不要加人物名前缀。",
       "",
       "【背景故事】",
       state.story.background,
@@ -4059,7 +4173,7 @@ select:focus-visible,
       state.book && state.book.enabled ? "【互动改编导演资料】\n" + YuC.Book.promptContext(state) : "",
       "",
       "【当前剧情记忆】",
-      formatMemory(state.memory)
+      memoryText
     ].filter(Boolean).join("\n");
     if (requested) {
       system += "\n\n【本次生成要求】\n" + requested +
@@ -4792,6 +4906,7 @@ select:focus-visible,
   var editingNewCast = false;
   var currentActionMessageId = "";
   var lastCast = [];
+  var lastUser = {};
   var toastTimer = 0;
 
   function init(nextHandlers) {
@@ -4826,7 +4941,7 @@ select:focus-visible,
       "bookDialog", "closeBookButton", "bookDialogTitle", "bookDialogChapter",
       "bookDialogMeta", "bookDialogModeInput", "bookDialogKnowledgeInput",
       "bookDialogSummary", "bookDialogScenes", "analyzeBookChapterButton",
-      "advanceBookChapterButton", "bookDialogStatus",
+      "previousBookChapterButton", "advanceBookChapterButton", "bookDialogStatus",
       "storiesDialog", "closeStoriesButton",
       "newStoryButton", "storyList", "messageActionDialog", "closeMessageActionButton",
       "messageActionPreview", "messageActionInstruction", "regenerateFromMessageButton",
@@ -4913,6 +5028,9 @@ select:focus-visible,
     });
     els.analyzeBookChapterButton.addEventListener("click", function () {
       if (handlers.onAnalyzeBookChapter) handlers.onAnalyzeBookChapter();
+    });
+    els.previousBookChapterButton.addEventListener("click", function () {
+      if (handlers.onPreviousBookChapter) handlers.onPreviousBookChapter();
     });
     els.advanceBookChapterButton.addEventListener("click", function () {
       if (handlers.onAdvanceBookChapter) handlers.onAdvanceBookChapter();
@@ -5250,7 +5368,7 @@ select:focus-visible,
       }, 0);
       els.bookSetupSummary.textContent = "《" + (book.title || "未命名小说") + "》 · " +
         book.chapters.length + " 章 · 约 " + total + " 字 · " +
-        (book.mode === "canon" ? "原著向" : book.mode === "free" ? "自由改编" : "合理化偏离");
+        YuC.Book.modeLabel(book.mode);
     } else {
       els.bookSetupSummary.textContent = "";
     }
@@ -5362,7 +5480,13 @@ select:focus-visible,
     els.chatTitle.textContent = Util.deriveTitle(state.story.background, state.story.title);
     renderBookProgress(state);
     renderCastStrip(state.cast);
-    renderMessages(state.messages, state.user, viewState, state.cast);
+    renderMessages(
+      YuC.Book.messagesForCurrentChapter(state),
+      state.user,
+      viewState,
+      state.cast,
+      state.book && state.book.enabled
+    );
     renderMemoryStatus(state, viewState);
     els.undoButton.disabled = !(state.checkpoints && state.checkpoints.length) ||
       !!viewState.busy || !!viewState.bookParsing;
@@ -5397,17 +5521,20 @@ select:focus-visible,
     });
   }
 
-  function renderMessages(messages, user, viewState, cast) {
+  function renderMessages(messages, user, viewState, cast, inBookMode) {
     var list = els.messageList;
+    lastUser = user || {};
     var shouldStick = list.scrollHeight - list.scrollTop - list.clientHeight < 180;
     list.replaceChildren();
     if (!messages || !messages.length) {
       var empty = document.createElement("div");
       empty.className = "chat-empty";
       var strong = document.createElement("strong");
-      strong.textContent = "舞台已经亮起";
+      strong.textContent = inBookMode ? "本章还没有演出" : "舞台已经亮起";
       var copy = document.createElement("span");
-      copy.textContent = "点“继续”让旁白开场；也可以写“对白或行动 # 本次要求”。";
+      copy.textContent = inBookMode
+        ? "点“继续”让旁白开场；也可以直接写“对白或行动 # 本次要求”。"
+        : "点“继续”让旁白开场；也可以写“对白或行动 # 本次要求”。";
       empty.append(strong, copy);
       list.appendChild(empty);
       return;
@@ -5421,7 +5548,7 @@ select:focus-visible,
       if (message.role === "user") {
         row.appendChild(createAvatar(user.avatar, "message-avatar", user.name || "你"));
       } else {
-        renderAssistantContent(row, message, cast);
+        renderAssistantContent(row, message, cast, lastUser);
         list.appendChild(row);
         return;
       }
@@ -5450,14 +5577,14 @@ select:focus-visible,
     if (viewState && viewState.forceBottom || shouldStick) scrollToBottom();
   }
 
-  function renderAssistantContent(row, message, cast) {
+  function renderAssistantContent(row, message, cast, user) {
     row.replaceChildren();
-    var blocks = YuC.Speakers.parse(message.content || "", cast || lastCast || []);
+    var blocks = YuC.Speakers.parse(message.content || "", cast || lastCast || [], user || lastUser);
     var segments = document.createElement("div");
     segments.className = "message-segments";
     blocks.forEach(function (block) {
       var segment = document.createElement("div");
-      segment.className = "speaker-row";
+      segment.className = "speaker-row" + (block.user ? " user-speaker" : "");
       if (block.narrator) {
         var narrator = document.createElement("span");
         narrator.className = "message-avatar narrator-avatar";
@@ -5489,7 +5616,7 @@ select:focus-visible,
     row.classList.toggle("streaming", !!message.streaming);
     row.classList.toggle("error", !!message.error);
     if (row.classList.contains("assistant")) {
-      renderAssistantContent(row, message, lastCast);
+      renderAssistantContent(row, message, lastCast, lastUser);
     } else {
       var bubble = row.querySelector(".message-bubble");
       if (bubble) bubble.textContent = message.content || "";
@@ -5549,7 +5676,7 @@ select:focus-visible,
       ? "第" + (index + 1) + "/" + book.chapters.length + "章 · " + chapter.title
       : "尚未导入小说";
     els.bookDialogMeta.textContent = book.enabled
-      ? (book.mode === "canon" ? "原著向" : book.mode === "free" ? "自由改编" : "合理化偏离") +
+      ? YuC.Book.modeLabel(book.mode) +
         " · " + (book.knowledge === "reader" ? "读者重游" : "角色防剧透") +
         " · 玩家介入 " + book.interventions + " 次"
       : "请先在设置页导入整本小说";
@@ -5573,6 +5700,7 @@ select:focus-visible,
     }
     var parsing = !!(viewState && viewState.bookParsing);
     els.analyzeBookChapterButton.disabled = parsing || !book.chapters.length;
+    els.previousBookChapterButton.disabled = parsing || index <= 0;
     els.advanceBookChapterButton.disabled = parsing || index >= book.chapters.length - 1;
     els.bookDialogStatus.textContent = parsing
       ? "正在解析当前章节…"
@@ -6153,6 +6281,7 @@ select:focus-visible,
       onDisableBook: disableBookMode,
       onOpenBook: openBook,
       onAnalyzeBookChapter: analyzeBookCurrentChapter,
+      onPreviousBookChapter: previousBookChapter,
       onAdvanceBookChapter: advanceBookChapter,
       onTitleChange: function (value) {
         state.story.title = Util.clampText(value, 60);
@@ -6399,6 +6528,13 @@ select:focus-visible,
     YuC.UI.openBookDialog(state, viewState);
   }
 
+  function chapterInterventions(index) {
+    return state.messages.filter(function (message) {
+      return message.role === "user" && message.content &&
+        Math.max(0, Number(message.chapterIndex) || 0) === index;
+    }).length;
+  }
+
   async function ensureBookChapterPlan(chapterIndex, force) {
     if (!state.book || !state.book.enabled) throw new Error("没有启用整书模式");
     var index = Math.max(0, Math.min(state.book.chapters.length - 1, Number(chapterIndex) || 0));
@@ -6480,7 +6616,8 @@ select:focus-visible,
     try {
       await ensureBookChapterPlan(next, false);
       state.book.currentChapter = next;
-      state.book.interventions = 0;
+      state.book.maxVisitedChapter = Math.max(state.book.maxVisitedChapter || 0, next);
+      state.book.interventions = chapterInterventions(next);
       saveNow();
       backupNow("进入小说下一章");
       render(false);
@@ -6498,6 +6635,25 @@ select:focus-visible,
       render(false);
       YuC.UI.renderBookDialog(state, viewState);
     }
+  }
+
+  function previousBookChapter() {
+    if (viewState.busy || viewState.bookParsing) return;
+    if (!state.book || !state.book.enabled) return;
+    var previous = state.book.currentChapter - 1;
+    if (previous < 0) {
+      YuC.UI.toast("已经是第一章");
+      return;
+    }
+    state.book.currentChapter = previous;
+    state.book.interventions = chapterInterventions(previous);
+    viewState.bookError = "";
+    saveNow();
+    backupNow("返回小说上一章");
+    render(true);
+    YuC.UI.renderBookDialog(state, viewState);
+    YuC.UI.setBookDialogStatus("已返回第" + (previous + 1) + "章，本章聊天记录已恢复。");
+    YuC.UI.toast("已返回第" + (previous + 1) + "章");
   }
 
   function findMessage(id) {
@@ -6663,7 +6819,7 @@ select:focus-visible,
     if (messageIndexAt < 0) return;
     var original = state.messages[messageIndexAt];
     prepareTruncation(messageIndexAt);
-    state.messages.push({
+    var variantMessage = {
       id: original.id,
       role: "assistant",
       content: selected,
@@ -6671,7 +6827,9 @@ select:focus-visible,
       error: false,
       stopped: false,
       complete: true
-    });
+    };
+    if (original.chapterIndex != null) variantMessage.chapterIndex = original.chapterIndex;
+    state.messages.push(variantMessage);
     saveNow();
     backupNow("选择候选版本");
     YuC.UI.closeVariants();
@@ -7154,6 +7312,10 @@ select:focus-visible,
         state.book.chapters.length - 1,
         Number(state.book.startChapter) || 0
       ));
+      state.book.maxVisitedChapter = Math.max(
+        state.book.maxVisitedChapter || 0,
+        state.book.currentChapter
+      );
     }
     if (bookMode && !YuC.Book.planForChapter(state.book, state.book.currentChapter)) {
       viewState.bookParsing = true;
@@ -7194,7 +7356,7 @@ select:focus-visible,
     }
     if (!requireApi()) return;
     YuC.State.makeCheckpoint(state);
-    state.messages.push({
+    var userMessage = {
       id: Util.uid("msg"),
       role: "user",
       content: content,
@@ -7203,7 +7365,12 @@ select:focus-visible,
       error: false,
       stopped: false,
       complete: true
-    });
+    };
+    if (state.book && state.book.enabled) {
+      userMessage.chapterIndex = state.book.currentChapter;
+      state.book.maxVisitedChapter = Math.max(state.book.maxVisitedChapter, state.book.currentChapter);
+    }
+    state.messages.push(userMessage);
     if (state.book && state.book.enabled && content) state.book.interventions += 1;
     YuC.UI.clearMessageInput();
     saveNow();
@@ -7227,6 +7394,7 @@ select:focus-visible,
       complete: false,
       streaming: true
     };
+    if (state.book && state.book.enabled) assistantMessage.chapterIndex = state.book.currentChapter;
     state.messages.push(assistantMessage);
     viewState.busy = true;
     viewState.stopping = false;
