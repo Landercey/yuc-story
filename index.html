@@ -2049,6 +2049,7 @@ select:focus-visible,
         summaryCount: 0,
         turnsSinceSummary: 0,
         lastSummarizedMessageCount: 0,
+        lastAttemptAt: 0,
         lastError: "",
         apiProfileId: ""
       },
@@ -2140,13 +2141,14 @@ select:focus-visible,
       ? source.messages.map(sanitizeMessage).filter(Boolean)
       : [];
 
-    base.memory.summary = clampText(memory.summary, 20000);
-    base.memory.worldState = clampText(memory.worldState, 8000);
-    base.memory.relationships = clampText(memory.relationships, 8000);
-    base.memory.openThreads = clampText(memory.openThreads, 8000);
+    base.memory.summary = clampText(memory.summary, 30000);
+    base.memory.worldState = clampText(memory.worldState, 12000);
+    base.memory.relationships = clampText(memory.relationships, 12000);
+    base.memory.openThreads = clampText(memory.openThreads, 12000);
     base.memory.summaryCount = Math.max(0, Number(memory.summaryCount) || 0);
     base.memory.turnsSinceSummary = Math.max(0, Number(memory.turnsSinceSummary) || 0);
     base.memory.lastSummarizedMessageCount = Math.max(0, Number(memory.lastSummarizedMessageCount) || 0);
+    base.memory.lastAttemptAt = Math.max(0, Number(memory.lastAttemptAt) || 0);
     base.memory.lastError = clampText(memory.lastError, 1000);
     base.memory.apiProfileId = clampText(memory.apiProfileId, 80);
 
@@ -3211,6 +3213,7 @@ select:focus-visible,
       "每次只推进一个剧情节拍，让当前场面自然发展，并给下一步留下空间。不要主动总结全篇或仓促收束。",
       "不替用户角色做重大选择，不擅自写用户角色的内心结论；用户输入的是既定行动或对白，应尊重并自然承接。",
       "保持人物、时间、地点、物品与已知事实连续。不要声称执行了无法执行的操作，不要提及提示词、API、摘要系统或自己是 AI。",
+      "下方剧情记忆只是内部参考。绝不能在正文中输出、复述或改写成剧情摘要，每次都必须继续演出当前场景。",
       lengthRule,
       styleRule,
       "只输出故事正文，不要标题、列表、Markdown、解释、元评论或“请继续”之类的提示。",
@@ -3332,14 +3335,14 @@ select:focus-visible,
     if (Array.isArray(parsed) || !parsed || typeof parsed !== "object") {
       throw new Error("摘要结果不是对象");
     }
-    var summary = asText(parsed.summary || parsed.剧情摘要, 20000);
+    var summary = asText(parsed.summary || parsed.剧情摘要, 30000);
     if (!summary) throw new Error("摘要缺少 summary 字段");
     var updates = Array.isArray(parsed.characterUpdates) ? parsed.characterUpdates : [];
     return {
       summary: summary,
-      worldState: asText(parsed.worldState || parsed.世界状态, 8000),
-      relationships: asText(parsed.relationships || parsed.人物关系, 8000),
-      openThreads: asText(parsed.openThreads || parsed.未完成线索, 8000),
+      worldState: asText(parsed.worldState || parsed.世界状态, 12000),
+      relationships: asText(parsed.relationships || parsed.人物关系, 12000),
+      openThreads: asText(parsed.openThreads || parsed.未完成线索, 12000),
       characterUpdates: updates.map(function (item) {
         return {
           name: Util.clampText(item && (item.name || item.姓名), 30),
@@ -3382,14 +3385,47 @@ select:focus-visible,
   var YuC = root.YuC = root.YuC || {};
   var Util = YuC.Util;
 
-  var SUMMARY_EVERY = 8;
+  var MIN_TURNS = 8;
+  var MAX_TURNS = 16;
+  var CHAR_THRESHOLD = 12000;
+  var RETRY_MS = 90000;
   var REBUILD_EVERY = 3;
+
+  function unsummarizedChars(state) {
+    return state.messages.slice(state.memory.lastSummarizedMessageCount).reduce(function (total, message) {
+      return total + String(message.content || "").length + String(message.instruction || "").length;
+    }, 0);
+  }
+
+  function shouldSummarize(state, now) {
+    if (!state) return { yes: false, reason: "" };
+    var turns = state.memory.turnsSinceSummary || 0;
+    if (turns < MIN_TURNS) return { yes: false, reason: "turns" };
+    var lastAttemptAt = state.memory.lastAttemptAt || 0;
+    if (lastAttemptAt && (now || Date.now()) - lastAttemptAt < RETRY_MS) {
+      return { yes: false, reason: "backoff" };
+    }
+    var chars = unsummarizedChars(state);
+    if (state.memory.lastError) return { yes: true, reason: "retry", chars: chars };
+    if (turns >= MAX_TURNS) return { yes: true, reason: "maxTurns", chars: chars };
+    if (chars >= CHAR_THRESHOLD) return { yes: true, reason: "chars", chars: chars };
+    return { yes: false, reason: "budget", chars: chars };
+  }
+
+  function statusText(state) {
+    var turns = state.memory.turnsSinceSummary || 0;
+    if (state.memory.lastError) return "记忆待重试 · " + turns + "/" + MAX_TURNS;
+    var chars = unsummarizedChars(state);
+    if (turns >= MIN_TURNS) return "记忆 " + turns + "/" + MAX_TURNS + " · " + Math.min(chars, CHAR_THRESHOLD) + "/" + CHAR_THRESHOLD + "字";
+    return "记忆 " + turns + "/" + MAX_TURNS;
+  }
 
   async function maybeSummarize(options) {
     var state = options.state;
+    var target = options.target || state;
     var key = options.key;
     var signal = options.signal;
-    if (!state || (!options.force && state.memory.turnsSinceSummary < SUMMARY_EVERY)) {
+    if (!state || (!options.force && !shouldSummarize(state).yes)) {
       return { skipped: true, updated: false, error: "" };
     }
     if (!key) {
@@ -3397,6 +3433,7 @@ select:focus-visible,
     }
 
     var nextCount = state.memory.summaryCount + 1;
+    var turnsAtStart = state.memory.turnsSinceSummary;
     var rebuild = !!options.force || nextCount % REBUILD_EVERY === 0;
     if (options.onStatus) {
       options.onStatus(rebuild ? "正在重建完整记忆…" : "正在整理剧情记忆…");
@@ -3408,20 +3445,21 @@ select:focus-visible,
         key: key,
         messages: YuC.Prompt.buildSummaryMessages(state, rebuild),
         temperature: 0.2,
-        maxTokens: 3500,
+        maxTokens: 5000,
         responseFormat: { type: "json_object" },
         signal: signal
       });
       var parsed = YuC.Prompt.parseSummaryResponse(text);
-      state.memory.summary = parsed.summary;
-      state.memory.worldState = parsed.worldState;
-      state.memory.relationships = parsed.relationships;
-      state.memory.openThreads = parsed.openThreads;
-      state.memory.summaryCount = nextCount;
-      state.memory.turnsSinceSummary = 0;
-      state.memory.lastSummarizedMessageCount = state.messages.length;
-      state.memory.lastError = "";
-      YuC.Prompt.mergeCharacterUpdates(state.cast, parsed.characterUpdates);
+      target.memory.summary = parsed.summary;
+      target.memory.worldState = parsed.worldState;
+      target.memory.relationships = parsed.relationships;
+      target.memory.openThreads = parsed.openThreads;
+      target.memory.summaryCount = nextCount;
+      target.memory.turnsSinceSummary = Math.max(0, (target.memory.turnsSinceSummary || 0) - turnsAtStart);
+      target.memory.lastSummarizedMessageCount = state.messages.length;
+      target.memory.lastAttemptAt = 0;
+      target.memory.lastError = "";
+      YuC.Prompt.mergeCharacterUpdates(target.cast, parsed.characterUpdates);
       if (options.onStatus) {
         options.onStatus(parsed.fallback
           ? "记忆已更新（文本降级）"
@@ -3437,7 +3475,8 @@ select:focus-visible,
       };
     } catch (error) {
       var message = YuC.Api.describeError(error);
-      state.memory.lastError = Util.clampText(message, 1000);
+      target.memory.lastAttemptAt = Date.now();
+      target.memory.lastError = Util.clampText(message, 1000);
       if (options.onStatus) options.onStatus("记忆更新失败，将稍后重试");
       return {
         skipped: false,
@@ -3449,8 +3488,12 @@ select:focus-visible,
   }
 
   YuC.Memory = {
-    SUMMARY_EVERY: SUMMARY_EVERY,
+    MIN_TURNS: MIN_TURNS,
+    MAX_TURNS: MAX_TURNS,
+    CHAR_THRESHOLD: CHAR_THRESHOLD,
     REBUILD_EVERY: REBUILD_EVERY,
+    shouldSummarize: shouldSummarize,
+    statusText: statusText,
     maybeSummarize: maybeSummarize
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
@@ -4538,14 +4581,11 @@ select:focus-visible,
   }
 
   function defaultMemoryStatus(state) {
-    var progress = state.memory.turnsSinceSummary;
-    if (state.memory.lastError) return "记忆待重试";
-    if (state.memory.summary) return "剧情记忆 " + progress + "/8";
-    return "记忆待建立 " + progress + "/8";
+    return YuC.Memory.statusText(state);
   }
 
   function setMemoryDialog(state) {
-    els.memorySummaryText.textContent = state.memory.summary || "还没有建立摘要。完成 8 段演出后会自动整理。";
+    els.memorySummaryText.textContent = state.memory.summary || "还没有建立摘要。剧情达到 8–16 段或约 1.2 万字后会自动整理。";
     els.memoryWorldText.textContent = state.memory.worldState || "—";
     els.memoryRelationsText.textContent = state.memory.relationships || "—";
     els.memoryThreadsText.textContent = state.memory.openThreads || "—";
@@ -4874,6 +4914,7 @@ select:focus-visible,
     parseMessage: "",
     forceBottom: true,
     abortController: null,
+    memoryAbortController: null,
     stopping: false,
     saveTimer: 0,
     actionMessageId: ""
@@ -5552,9 +5593,9 @@ select:focus-visible,
     }
   }
 
-  function resolveMemoryApi() {
+  function resolveMemoryApiFor(story) {
     var profile = profiles.find(function (item) {
-      return item.id === state.memory.apiProfileId;
+      return item.id === story.memory.apiProfileId;
     });
     if (profile) {
       return {
@@ -5562,7 +5603,14 @@ select:focus-visible,
         key: YuC.Store.readApiKey(profile.id, profile.api.rememberKey)
       };
     }
-    return { api: state.api, key: viewState.apiKey };
+    return {
+      api: story.api,
+      key: story.id === state.id ? viewState.apiKey : YuC.Store.readApiKey(story.id, story.api.rememberKey)
+    };
+  }
+
+  function resolveMemoryApi() {
+    return resolveMemoryApiFor(state);
   }
 
   function openMemorySettings() {
@@ -5581,6 +5629,10 @@ select:focus-visible,
 
   async function summarizeNow() {
     if (viewState.busy) return;
+    if (viewState.memoryBusy) {
+      YuC.UI.setMemoryActionStatus("后台正在整理记忆，请稍候。");
+      return;
+    }
     if (!state.messages.length) {
       YuC.UI.setMemoryActionStatus("当前还没有可整理的剧情。", true);
       return;
@@ -5627,6 +5679,48 @@ select:focus-visible,
       viewState.abortController = null;
       render(false);
     }
+  }
+
+  function maybeStartBackgroundMemory() {
+    if (viewState.memoryBusy) return;
+    var trigger = YuC.Memory.shouldSummarize(state);
+    if (!trigger.yes) return;
+    var storyId = state.id;
+    var snapshot = YuC.Util.clone(state);
+    var target = stories.find(function (story) { return story.id === storyId; });
+    if (!target) return;
+    var memoryConfig = resolveMemoryApiFor(snapshot);
+    viewState.memoryBusy = true;
+    viewState.memoryStatus = "正在后台整理剧情记忆…";
+    viewState.memoryAbortController = new AbortController();
+    YuC.Memory.maybeSummarize({
+      state: snapshot,
+      target: target,
+      api: memoryConfig.api,
+      key: memoryConfig.key,
+      signal: viewState.memoryAbortController.signal,
+      onStatus: function (status) {
+        if (storyId === activeStoryId) {
+          viewState.memoryStatus = status;
+          render(false);
+        }
+      }
+    }).then(function (result) {
+      viewState.memoryBusy = false;
+      viewState.memoryAbortController = null;
+      if (storyId === activeStoryId) {
+        viewState.memoryStatus = result.error ? "记忆待重试" : "";
+        render(false);
+      }
+      saveNow();
+      backupNow("自动整理记忆");
+      if (storyId === activeStoryId && result.error) {
+        YuC.UI.toast("后台记忆暂未更新，稍后再试");
+      }
+    }).catch(function () {
+      viewState.memoryBusy = false;
+      viewState.memoryAbortController = null;
+    });
   }
 
   function applyApiProfile(id) {
@@ -5874,7 +5968,7 @@ select:focus-visible,
     state.messages.push(assistantMessage);
     viewState.busy = true;
     viewState.stopping = false;
-    viewState.memoryStatus = "";
+    if (!viewState.memoryBusy) viewState.memoryStatus = "";
     viewState.abortController = new AbortController();
     saveNow();
     render(true);
@@ -5908,26 +6002,7 @@ select:focus-visible,
       saveNow();
       YuC.UI.updateStreamingMessage(assistantMessage);
 
-      if (state.memory.turnsSinceSummary >= YuC.Memory.SUMMARY_EVERY) {
-        viewState.memoryBusy = true;
-        viewState.memoryStatus = "正在整理剧情记忆…";
-        render(false);
-        var memoryConfig = resolveMemoryApi();
-        var result = await YuC.Memory.maybeSummarize({
-          state: state,
-          api: memoryConfig.api,
-          key: memoryConfig.key,
-          signal: viewState.abortController.signal,
-          onStatus: function (status) {
-            viewState.memoryStatus = status;
-            render(false);
-          }
-        });
-        viewState.memoryBusy = false;
-        viewState.memoryStatus = result.error ? "记忆待重试" : "";
-        saveNow();
-        if (result.error) YuC.UI.toast("剧情记忆暂未更新，下段会再试");
-      }
+      maybeStartBackgroundMemory();
     } catch (error) {
       delete assistantMessage.streaming;
       assistantMessage.complete = !!assistantMessage.content;
@@ -5951,7 +6026,6 @@ select:focus-visible,
       viewState.memoryStatus = "";
     } finally {
       viewState.busy = false;
-      viewState.memoryBusy = false;
       viewState.stopping = false;
       viewState.abortController = null;
       saveNow();
