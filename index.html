@@ -1770,8 +1770,8 @@ select:focus-visible,
                 <label class="field compact-field">
                   <span>认知方式</span>
                   <select id="bookKnowledgeInput">
-                    <option value="character">角色视角 · 防剧透</option>
-                    <option value="reader">读者重游 · 保留读者记忆</option>
+                    <option value="character">模拟初读 · 只知道角色当下知道的</option>
+                    <option value="reader">读者重游 · 我记得原著，允许反讽</option>
                   </select>
                 </label>
                 <label class="field compact-field" id="bookStartChapterField">
@@ -1781,6 +1781,7 @@ select:focus-visible,
               </div>
               <p class="book-setup-summary" id="bookSetupSummary"></p>
               <p class="fine-print">跟随原著：结果尽量不变，选择影响过程。可改写后续：选择可以改变结果，AI 重排后续。重新创作：只保留人物、世界和文风。</p>
+              <p class="fine-print">模拟初读：按角色当下认知演出，不利用你的原著记忆。读者重游：仍按角色认知演出，但旁白可以使用戏剧反讽。</p>
               <button class="quiet-button small-button" id="disableBookButton" type="button">退出整书模式</button>
             </div>
             <p class="fine-print">解析章节时，只会把当前章节原文发送给你选择的 AI 接口。小说原文和记录都留在本机浏览器。</p>
@@ -2161,12 +2162,13 @@ select:focus-visible,
           <label class="field compact-field">
             <span>认知方式</span>
             <select id="bookDialogKnowledgeInput">
-              <option value="character">角色视角 · 防剧透</option>
-              <option value="reader">读者重游 · 保留读者记忆</option>
+              <option value="character">模拟初读 · 只知道角色当下知道的</option>
+              <option value="reader">读者重游 · 我记得原著，允许反讽</option>
             </select>
           </label>
         </div>
         <p class="fine-print">跟随原著：关键结果仍会发生，你影响过程和人物反应。可改写后续：你的选择可以改变结果，AI 重排后面剧情。重新创作：不遵守原著后续，只保留人物、世界和文风。</p>
+        <p class="fine-print">模拟初读：假装第一次读，按角色当下所知游玩。读者重游：你记得原著，旁白可作戏剧反讽，但主角仍不能预知未来。</p>
         <p class="fine-print">你的边界：你决定主角说什么、做什么、怎么想；AI 只决定世界如何回应，以及 NPC 说什么和做什么。</p>
         <details class="book-spoiler-box">
           <summary>查看本章导演蓝图（含剧透）</summary>
@@ -5677,7 +5679,7 @@ select:focus-visible,
       : "尚未导入小说";
     els.bookDialogMeta.textContent = book.enabled
       ? YuC.Book.modeLabel(book.mode) +
-        " · " + (book.knowledge === "reader" ? "读者重游" : "角色防剧透") +
+        " · " + (book.knowledge === "reader" ? "读者重游" : "模拟初读") +
         " · 玩家介入 " + book.interventions + " 次"
       : "请先在设置页导入整本小说";
     setValue(els.bookDialogModeInput, book.mode);
