@@ -2141,13 +2141,16 @@ select:focus-visible,
       ? source.messages.map(sanitizeMessage).filter(Boolean)
       : [];
 
-    base.memory.summary = clampText(memory.summary, 30000);
-    base.memory.worldState = clampText(memory.worldState, 12000);
-    base.memory.relationships = clampText(memory.relationships, 12000);
-    base.memory.openThreads = clampText(memory.openThreads, 12000);
+    base.memory.summary = clampText(memory.summary, 4000);
+    base.memory.worldState = clampText(memory.worldState, 1000);
+    base.memory.relationships = clampText(memory.relationships, 1200);
+    base.memory.openThreads = clampText(memory.openThreads, 1200);
     base.memory.summaryCount = Math.max(0, Number(memory.summaryCount) || 0);
     base.memory.turnsSinceSummary = Math.max(0, Number(memory.turnsSinceSummary) || 0);
-    base.memory.lastSummarizedMessageCount = Math.max(0, Number(memory.lastSummarizedMessageCount) || 0);
+    base.memory.lastSummarizedMessageCount = Math.min(
+      base.messages.length,
+      Math.max(0, Number(memory.lastSummarizedMessageCount) || 0)
+    );
     base.memory.lastAttemptAt = Math.max(0, Number(memory.lastAttemptAt) || 0);
     base.memory.lastError = clampText(memory.lastError, 1000);
     base.memory.apiProfileId = clampText(memory.apiProfileId, 80);
@@ -3163,6 +3166,7 @@ select:focus-visible,
     long: "通常写 250–350 个中文字符，允许展开环境、动作和对白，但要保持节奏。",
     epic: "通常写 450–600 个中文字符，允许完整描写一个场景节拍；仍须保留下一步空间。"
   };
+  var CHAT_CONTEXT_CHARS = 20000;
 
   function formatCast(cast) {
     if (!Array.isArray(cast) || !cast.length) return "尚未提取人物，按背景需要自然引入。";
@@ -3186,11 +3190,22 @@ select:focus-visible,
   }
 
   function consecutiveMessages(state) {
-    return state.messages.filter(function (message) {
+    var start = Math.min(
+      state.messages.length,
+      Math.max(0, Number(state.memory && state.memory.lastSummarizedMessageCount) || 0)
+    );
+    var pending = state.messages.slice(start).filter(function (message) {
       return !message.error && message.role && String(message.content || "").trim();
-    }).slice(-20).map(function (message) {
-      return { role: message.role, content: message.content };
     });
+    var selected = [];
+    var chars = 0;
+    for (var index = pending.length - 1; index >= 0; index -= 1) {
+      var size = String(pending[index].content || "").length;
+      if (selected.length && chars + size > CHAT_CONTEXT_CHARS) break;
+      selected.unshift({ role: pending[index].role, content: pending[index].content });
+      chars += size;
+    }
+    return selected;
   }
 
   function splitInput(text) {
@@ -3272,9 +3287,13 @@ select:focus-visible,
   }
 
   function buildSummaryMessages(state, rebuild) {
+    var summarized = Math.min(
+      state.messages.length,
+      Math.max(0, Number(state.memory.lastSummarizedMessageCount) || 0)
+    );
     var messages = rebuild
       ? state.messages
-      : state.messages.slice(Math.max(0, state.memory.lastSummarizedMessageCount - 2));
+      : state.messages.slice(Math.max(0, summarized - 2));
     var dialog = compactMessagesForSummary(messages).slice(-120000);
     var previous = formatMemory(state.memory);
 
@@ -3286,6 +3305,8 @@ select:focus-visible,
           "只输出一个 JSON 对象，不要代码块、解释或额外文字。",
           '格式：{"summary":"按时间顺序压缩的重要剧情","worldState":"地点、时间、环境和局势","relationships":"人物关系及变化","openThreads":"承诺、伏笔和未解决目标","characterUpdates":[{"name":"人物姓名","currentState":"此刻状态"}]}',
           "保留人物、地点、关键物品、伤势、承诺、关系变化和未完成线索；禁止编造，不要写文风评价。",
+          "档案必须简洁：summary 控制在 1200 字内，其余字段各控制在 400 字内；只保留未来仍会影响剧情的事实，不复述细节。",
+          "没有变化的 worldState、relationships、openThreads 输出空字符串，不要重抄旧内容；没有变化的人物不要加入 characterUpdates。",
           rebuild ? "这是全量重建，请以原文对话为准核对并纠正旧摘要。" : "在旧档案基础上合并新内容，删除已经解决且不再重要的细枝末节。"
         ].join("\n")
       },
@@ -3324,7 +3345,7 @@ select:focus-visible,
         throw new Error("回复中没有可解析的 JSON：" + raw.slice(0, 160));
       }
       return {
-        summary: asText(raw.replace(/^```(?:text|markdown)?\s*/i, "").replace(/\s*```$/i, ""), 20000),
+        summary: asText(raw.replace(/^```(?:text|markdown)?\s*/i, "").replace(/\s*```$/i, ""), 4000),
         worldState: "",
         relationships: "",
         openThreads: "",
@@ -3335,14 +3356,14 @@ select:focus-visible,
     if (Array.isArray(parsed) || !parsed || typeof parsed !== "object") {
       throw new Error("摘要结果不是对象");
     }
-    var summary = asText(parsed.summary || parsed.剧情摘要, 30000);
+    var summary = asText(parsed.summary || parsed.剧情摘要, 4000);
     if (!summary) throw new Error("摘要缺少 summary 字段");
     var updates = Array.isArray(parsed.characterUpdates) ? parsed.characterUpdates : [];
     return {
       summary: summary,
-      worldState: asText(parsed.worldState || parsed.世界状态, 12000),
-      relationships: asText(parsed.relationships || parsed.人物关系, 12000),
-      openThreads: asText(parsed.openThreads || parsed.未完成线索, 12000),
+      worldState: asText(parsed.worldState || parsed.世界状态, 1000),
+      relationships: asText(parsed.relationships || parsed.人物关系, 1200),
+      openThreads: asText(parsed.openThreads || parsed.未完成线索, 1200),
       characterUpdates: updates.map(function (item) {
         return {
           name: Util.clampText(item && (item.name || item.姓名), 30),
@@ -3371,6 +3392,7 @@ select:focus-visible,
     lengths: LENGTH_RULES,
     splitInput: splitInput,
     buildChatMessages: buildChatMessages,
+    CHAT_CONTEXT_CHARS: CHAT_CONTEXT_CHARS,
     buildExtractionMessages: buildExtractionMessages,
     buildSummaryMessages: buildSummaryMessages,
     parseSummaryResponse: parseSummaryResponse,
@@ -3385,39 +3407,35 @@ select:focus-visible,
   var YuC = root.YuC = root.YuC || {};
   var Util = YuC.Util;
 
-  var MIN_TURNS = 8;
-  var MAX_TURNS = 16;
-  var CHAR_THRESHOLD = 12000;
+  var CHAR_THRESHOLD = 16000;
   var RETRY_MS = 90000;
-  var REBUILD_EVERY = 3;
+  var REBUILD_EVERY = 8;
 
   function unsummarizedChars(state) {
-    return state.messages.slice(state.memory.lastSummarizedMessageCount).reduce(function (total, message) {
+    var start = Math.min(
+      state.messages.length,
+      Math.max(0, Number(state.memory.lastSummarizedMessageCount) || 0)
+    );
+    return state.messages.slice(start).reduce(function (total, message) {
       return total + String(message.content || "").length + String(message.instruction || "").length;
     }, 0);
   }
 
   function shouldSummarize(state, now) {
     if (!state) return { yes: false, reason: "" };
-    var turns = state.memory.turnsSinceSummary || 0;
-    if (turns < MIN_TURNS) return { yes: false, reason: "turns" };
     var lastAttemptAt = state.memory.lastAttemptAt || 0;
     if (lastAttemptAt && (now || Date.now()) - lastAttemptAt < RETRY_MS) {
       return { yes: false, reason: "backoff" };
     }
     var chars = unsummarizedChars(state);
-    if (state.memory.lastError) return { yes: true, reason: "retry", chars: chars };
-    if (turns >= MAX_TURNS) return { yes: true, reason: "maxTurns", chars: chars };
     if (chars >= CHAR_THRESHOLD) return { yes: true, reason: "chars", chars: chars };
     return { yes: false, reason: "budget", chars: chars };
   }
 
   function statusText(state) {
-    var turns = state.memory.turnsSinceSummary || 0;
-    if (state.memory.lastError) return "记忆待重试 · " + turns + "/" + MAX_TURNS;
     var chars = unsummarizedChars(state);
-    if (turns >= MIN_TURNS) return "记忆 " + turns + "/" + MAX_TURNS + " · " + Math.min(chars, CHAR_THRESHOLD) + "/" + CHAR_THRESHOLD + "字";
-    return "记忆 " + turns + "/" + MAX_TURNS;
+    if (state.memory.lastError) return "记忆待重试 · " + Math.min(chars, CHAR_THRESHOLD) + "/" + CHAR_THRESHOLD + "字";
+    return "记忆 " + Math.min(chars, CHAR_THRESHOLD) + "/" + CHAR_THRESHOLD + "字";
   }
 
   async function maybeSummarize(options) {
@@ -3445,15 +3463,15 @@ select:focus-visible,
         key: key,
         messages: YuC.Prompt.buildSummaryMessages(state, rebuild),
         temperature: 0.2,
-        maxTokens: 5000,
+        maxTokens: 2800,
         responseFormat: { type: "json_object" },
         signal: signal
       });
       var parsed = YuC.Prompt.parseSummaryResponse(text);
       target.memory.summary = parsed.summary;
-      target.memory.worldState = parsed.worldState;
-      target.memory.relationships = parsed.relationships;
-      target.memory.openThreads = parsed.openThreads;
+      target.memory.worldState = parsed.worldState || target.memory.worldState;
+      target.memory.relationships = parsed.relationships || target.memory.relationships;
+      target.memory.openThreads = parsed.openThreads || target.memory.openThreads;
       target.memory.summaryCount = nextCount;
       target.memory.turnsSinceSummary = Math.max(0, (target.memory.turnsSinceSummary || 0) - turnsAtStart);
       target.memory.lastSummarizedMessageCount = state.messages.length;
@@ -3488,8 +3506,6 @@ select:focus-visible,
   }
 
   YuC.Memory = {
-    MIN_TURNS: MIN_TURNS,
-    MAX_TURNS: MAX_TURNS,
     CHAR_THRESHOLD: CHAR_THRESHOLD,
     REBUILD_EVERY: REBUILD_EVERY,
     shouldSummarize: shouldSummarize,
@@ -4585,7 +4601,7 @@ select:focus-visible,
   }
 
   function setMemoryDialog(state) {
-    els.memorySummaryText.textContent = state.memory.summary || "还没有建立摘要。剧情达到 8–16 段或约 1.2 万字后会自动整理。";
+    els.memorySummaryText.textContent = state.memory.summary || "还没有建立摘要。短篇不会自动整理；未整理内容达到约 1.6 万字后才会生成。";
     els.memoryWorldText.textContent = state.memory.worldState || "—";
     els.memoryRelationsText.textContent = state.memory.relationships || "—";
     els.memoryThreadsText.textContent = state.memory.openThreads || "—";
