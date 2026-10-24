@@ -784,6 +784,8 @@ select:focus-visible,
   gap: 9px;
   max-width: 86%;
   margin: 0 0 20px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
   animation: message-in .2s ease both;
 }
 
@@ -825,6 +827,11 @@ select:focus-visible,
   font-size: 12px;
 }
 
+.narrator-avatar {
+  color: var(--muted);
+  background: rgba(232, 220, 204, .42);
+}
+
 .message-content-wrap {
   min-width: 0;
 }
@@ -834,6 +841,7 @@ select:focus-visible,
   color: var(--muted);
   font-size: 10px;
   letter-spacing: .06em;
+  overflow-wrap: anywhere;
 }
 
 .message.user .message-label {
@@ -2900,6 +2908,21 @@ select:focus-visible,
       else blocks.push({ narrator: true, name: "旁白", avatar: "", text: text });
     }
 
+    function cleanName(value) {
+      return String(value || "")
+        .trim()
+        .replace(/^[*_`~#]+|[*_`~#]+$/g, "")
+        .trim();
+    }
+
+    function looksLikeSpeaker(name) {
+      if (!name || name.length > 12 || /[，。！？；]/.test(name)) return false;
+      if (/^(时间|地点|场景|环境|动作|心理|内心|旁白|提示|注意|系统|标题|章节|背景|设定|备注|状态)$/.test(name)) {
+        return false;
+      }
+      return /^[\u3400-\u9fffA-Za-z0-9·・._ -]+$/.test(name);
+    }
+
     var blocks = [];
     var narration = [];
     source.split(/\r?\n/).forEach(function (line) {
@@ -2913,7 +2936,7 @@ select:focus-visible,
         // Bracket labels are accepted as a model fallback.
       }
       if (match) {
-        var name = match[1].trim();
+        var name = cleanName(match[1]);
         var character = byName[name.toLowerCase()];
         if (character || name === "旁白") {
           flush(blocks, narration);
@@ -2928,6 +2951,17 @@ select:focus-visible,
           } else {
             blocks.push({ narrator: true, name: "旁白", avatar: "", text: match[2].trim() });
           }
+          return;
+        }
+        if (looksLikeSpeaker(name) && match[2].trim()) {
+          flush(blocks, narration);
+          narration = [];
+          blocks.push({
+            narrator: false,
+            name: name,
+            avatar: "",
+            text: match[2].trim()
+          });
           return;
         }
       }
@@ -3758,6 +3792,28 @@ select:focus-visible,
     }) || null;
   }
 
+  function relevantCast(state) {
+    var book = state && state.book;
+    var cast = state && Array.isArray(state.cast) ? state.cast : [];
+    if (!book || !book.enabled) return cast;
+    var plan = planForChapter(book, Math.max(0, Number(book.currentChapter) || 0));
+    if (!plan) return cast.slice(0, 12);
+    var names = Object.create(null);
+    plan.characters.forEach(function (character) {
+      if (character && character.name) names[character.name.toLowerCase()] = true;
+    });
+    plan.scenes.forEach(function (scene) {
+      (scene.characters || []).forEach(function (name) {
+        if (name) names[String(name).toLowerCase()] = true;
+      });
+    });
+    var relevant = cast.filter(function (character) {
+      return character && names[String(character.name || "").toLowerCase()];
+    });
+    if (!relevant.length) relevant = plan.characters;
+    return relevant.slice(0, 16);
+  }
+
   function buildChapterAnalysisMessages(state, chapterIndex) {
     var book = state.book;
     var chapter = book.chapters[chapterIndex];
@@ -3900,6 +3956,7 @@ select:focus-visible,
     fromText: fromText,
     chapterText: chapterText,
     planForChapter: planForChapter,
+    relevantCast: relevantCast,
     buildChapterAnalysisMessages: buildChapterAnalysisMessages,
     parseChapterAnalysis: parseChapterAnalysis,
     promptContext: promptContext,
@@ -3928,9 +3985,9 @@ select:focus-visible,
     if (!Array.isArray(cast) || !cast.length) return "尚未提取人物，按背景需要自然引入。";
     return cast.map(function (character) {
       var parts = [character.name];
-      if (character.identity) parts.push("身份：" + character.identity);
-      if (character.appearance) parts.push("外貌：" + character.appearance);
-      if (character.currentState) parts.push("当前状态：" + character.currentState);
+      if (character.identity) parts.push("身份：" + Util.clampText(character.identity, 160));
+      if (character.appearance) parts.push("外貌：" + Util.clampText(character.appearance, 240));
+      if (character.currentState) parts.push("当前状态：" + Util.clampText(character.currentState, 240));
       return "- " + parts.join("；");
     }).join("\n");
   }
@@ -3994,7 +4051,7 @@ select:focus-visible,
       state.story.background,
       "",
       "【主要人物】",
-      formatCast(state.cast),
+      formatCast(state.book && state.book.enabled ? YuC.Book.relevantCast(state) : state.cast),
       "",
       "【用户身份】",
       state.user.name ? (state.user.name + (state.user.identity ? "；" + state.user.identity : "")) : "未指定；用户可旁观，也可随时以“你”的身份介入。",
@@ -5403,8 +5460,9 @@ select:focus-visible,
       segment.className = "speaker-row";
       if (block.narrator) {
         var narrator = document.createElement("span");
-        narrator.className = "message-avatar";
+        narrator.className = "message-avatar narrator-avatar";
         narrator.textContent = "叙";
+        narrator.setAttribute("aria-hidden", "true");
         segment.appendChild(narrator);
       } else {
         segment.appendChild(createAvatar(block.avatar, "message-avatar", block.name));
